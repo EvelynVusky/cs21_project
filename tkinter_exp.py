@@ -3,12 +3,16 @@ import threading
 from time import sleep
 import random
 import sys
+import math
 
 canvas_height = 500
 canvas_width = 500
 movement_height = 300 ## subcanvas within rabbits are spawned
 movement_width = 300 ## subcanvas within rabbits are spawned
 canvas_lock = threading.Lock()
+rabbits = []
+plants = []
+
 
 def check_bounds(col, row): 
     if col < 10 or col >= canvas_width-10:
@@ -53,20 +57,55 @@ class Rabbit(Creature, threading.Thread):
             dy = self.size_step
         return col, row, dx, dy
 
+    # finds the distance between this creature and another (float)
+    def getDistanceTo(self, otherCreature):
+        return math.sqrt(((self.position[0] - otherCreature.position[0]) ** 2) + ((self.position[1] - otherCreature.position[1]) ** 2))
+
+    def findClosestFood(self):
+        return min(plants, key=self.getDistanceTo)
+
+    def moveTowardsClosestFood(self):
+        food = self.findClosestFood()
+
+        dx = food.position[0] - self.position[0]
+        dy = food.position[1] - self.position[1]
+
+        print(self.position)
+        print(food.position)
+        print(self.getDistanceTo(food))
+
+        if self.getDistanceTo(food) > self.size_step:
+            print(dx)
+            dx /= self.getDistanceTo(food)
+            print(dx)
+            dx = int(dx * self.size_step)
+            print(dx)
+            # dx = int((dx / self.getDistanceTo(food)) * self.size_step)
+            dy = int((dy / self.getDistanceTo(food)) * self.size_step)
+
+        # print(dx, dy)
+
+        return self.position[0] + dx, self.position[1] + dy, dx, dy
+
     def run(self): 
         while self.total_moves > 0:
             with canvas_lock:
-                new_col, new_row, dx, dy = self.generate_position()
-                while(not check_bounds(new_col, new_row)):
-                    new_col, new_row, dx, dy = (self.generate_position())
+                # print(self.position)
+                # print(self.findClosestFood().position[0])
+                # print(self.findClosestFood().position[1])
+                new_col, new_row, dx, dy = self.moveTowardsClosestFood()
+                # new_col, new_row, dx, dy = self.generate_position()
+                # while(not check_bounds(new_col, new_row)):
+                #     new_col, new_row, dx, dy = (self.generate_position())
                 self.position[0], self.position[1] = new_col, new_row
 
                 self.canvas.move(self.canvas_object, dx, dy)
                 self.canvas.update()
-                # print(self.position)
 
             self.total_moves -= 1
             sleep(1)
+            # Some kind of barrier here to prevent rabbits from taking more
+            # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
         print("rabbit is done")
 
@@ -86,9 +125,12 @@ def main():
     canvas = tk.Canvas(window, width=canvas_width, height=canvas_height, bg="white")
     canvas.pack()
 
-    rabbits, n_rabbits = [], 10
-    plants, n_plants = [], 10
-    total_moves = 10
+    n_rabbits = 10
+    n_plants = 10
+    # I made rabbits and plants global variables to access them from threads
+    # rabbits, n_rabbits = [], 1 
+    # plants, n_plants = [], 10
+    total_moves = 20
             
     for _ in range(n_rabbits): 
         initial_pos = [random.randint(0, movement_width-1), random.randint(0, movement_height-1)]
