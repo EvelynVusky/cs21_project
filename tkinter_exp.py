@@ -10,6 +10,8 @@ canvas_width = 500
 movement_height = 300 ## subcanvas within rabbits are spawned
 movement_width = 300 ## subcanvas within rabbits are spawned
 canvas_lock = threading.Lock()
+rabbit_lock = threading.Lock()
+plant_lock = threading.Lock()
 rabbits = []
 plants = []
 
@@ -61,65 +63,88 @@ class Rabbit(Creature, threading.Thread):
     def getDistanceTo(self, otherCreature):
         return math.sqrt(((self.position[0] - otherCreature.position[0]) ** 2) + ((self.position[1] - otherCreature.position[1]) ** 2))
 
+    # we should make this detect if there is no food on the map
     def findClosestFood(self):
-        return min(plants, key=self.getDistanceTo)
+        # filtered_plants = [x for x in plants if hasValue(x)]
+        with plant_lock:
+            if (len(plants) == 0):
+                return None
+            return min(plants, key=self.getDistanceTo)
 
+    # find the closest food item and moves towards it
     def moveTowardsClosestFood(self):
         food = self.findClosestFood()
+        if (not food):
+            return self.position[0], self.position[1], 0, 0, None
 
         dx = food.position[0] - self.position[0]
         dy = food.position[1] - self.position[1]
 
-        print(self.position)
-        print(food.position)
-        print(self.getDistanceTo(food))
-
         if self.getDistanceTo(food) > self.size_step:
-            print(dx)
-            dx /= self.getDistanceTo(food)
-            print(dx)
-            dx = int(dx * self.size_step)
-            print(dx)
-            # dx = int((dx / self.getDistanceTo(food)) * self.size_step)
+            dx = int((dx / self.getDistanceTo(food)) * self.size_step)
             dy = int((dy / self.getDistanceTo(food)) * self.size_step)
 
-        # print(dx, dy)
-
-        return self.position[0] + dx, self.position[1] + dy, dx, dy
+        return self.position[0] + dx, self.position[1] + dy, dx, dy, food
 
     def run(self): 
         while self.total_moves > 0:
+            new_col, new_row, dx, dy, food = self.moveTowardsClosestFood()
+            if (not food): break
+            self.position[0], self.position[1] = new_col, new_row
             with canvas_lock:
-                # print(self.position)
-                # print(self.findClosestFood().position[0])
-                # print(self.findClosestFood().position[1])
-                new_col, new_row, dx, dy = self.moveTowardsClosestFood()
                 # new_col, new_row, dx, dy = self.generate_position()
                 # while(not check_bounds(new_col, new_row)):
                 #     new_col, new_row, dx, dy = (self.generate_position())
-                self.position[0], self.position[1] = new_col, new_row
+
+                if ((self.getDistanceTo(food) < 1) and food.getEaten()):
+                    # alternativly we could make this setting the value instead of increasing
+                    self.total_moves += 10
 
                 self.canvas.move(self.canvas_object, dx, dy)
                 self.canvas.update()
 
             self.total_moves -= 1
+            # print(self.total_moves)
             sleep(1)
             # Some kind of barrier here to prevent rabbits from taking more
             # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
+        with rabbit_lock:
+                rabbits.remove(self)
+        with canvas_lock:
+            self.canvas.delete(self.canvas_object)
+            self.canvas.update()
         print("rabbit is done")
 
 class Plant(Creature):
     def __init__(self, initial_pos, canvas): 
         Creature.__init__(self, initial_pos)
         self.canvas = canvas
+        self.foodValue = 5
         self.canvas_object = self.canvas.create_rectangle(initial_pos[0],
                                                         initial_pos[1],
                                                         initial_pos[0]+10,
                                                         initial_pos[1]+10, 
                                                         fill="green")
 
+    def getEaten(self):
+        if (self.foodValue > 0):
+            self.foodValue -= 1
+            if (self.foodValue == 0):
+                # if we only call this function while holding the lock do we
+                # need to care here?
+                with plant_lock:
+                    plants.remove(self)
+                self.canvas.delete(self.canvas_object)
+                self.canvas.update()
+            return True
+        else:
+            return False
+
+
 def main():
+    # if we move this stuff to be global variables we can get rid of each creature
+    # having its own representation of canvas internally
     window = tk.Tk() 
     window.title("Rabbits + Plants Simulation")
     canvas = tk.Canvas(window, width=canvas_width, height=canvas_height, bg="white")
@@ -127,9 +152,6 @@ def main():
 
     n_rabbits = 10
     n_plants = 10
-    # I made rabbits and plants global variables to access them from threads
-    # rabbits, n_rabbits = [], 1 
-    # plants, n_plants = [], 10
     total_moves = 20
             
     for _ in range(n_rabbits): 
