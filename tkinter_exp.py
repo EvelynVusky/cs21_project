@@ -6,8 +6,6 @@ import sys
 
 canvas_height = 500
 canvas_width = 500
-movement_height = 300 ## subcanvas within rabbits/foxes are spawned
-movement_width = 300 ## subcanvas within rabbits/foxes are spawned
 canvas_lock = threading.Lock()
 
 def check_bounds(col, row): 
@@ -24,12 +22,15 @@ class Creature:
         self.position = initial_pos
 
 
+#Foxes have the list of plants but they wont need them, just for consistency
 class Fox(Creature, threading.Thread):
-    def __init__(self, initial_pos, total_moves, canvas):
+    def __init__(self, initial_pos, total_moves, canvas, rabbits, foxes, plants):
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
-        self.size_step = 10
+        self.size_step = 25
         self.total_moves = total_moves
+        self.rabbits = rabbits
+        self.foxes = foxes
         self.canvas = canvas
         self.canvas_object = self.canvas.create_oval(initial_pos[0],
                                                         initial_pos[1],
@@ -39,6 +40,7 @@ class Fox(Creature, threading.Thread):
     def generate_position(self):
         col, row = self.position[0], self.position[1]
         dx, dy = 0, 0
+        #call instinct here
         direction = random.randint(1, 4)
         if (direction == 1): ## above
             row -= self.size_step
@@ -73,11 +75,14 @@ class Fox(Creature, threading.Thread):
 
 
 class Rabbit(Creature, threading.Thread):    
-    def __init__(self, initial_pos, total_moves, canvas): 
+    def __init__(self, initial_pos, total_moves, canvas, rabbits, foxes, plants): 
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
         self.size_step = 10
         self.total_moves = total_moves
+        self.rabbits = rabbits
+        self.foxes = foxes
+        self.plants = plants
         self.canvas = canvas
         self.canvas_object = self.canvas.create_oval(initial_pos[0],
                                                         initial_pos[1],
@@ -146,18 +151,18 @@ def main():
 
     #intialize start positions for all creatures, no two creatures should have
     #the same start position
-    def initialize_start_positions(creatures, n_creatures, creature_class):
+    def initialize_start_positions(creatures, n_creatures, creature_class, rabbits, foxes, plants):
             for _ in range(n_creatures): 
-                initial_pos = [random.randint(0, movement_width-1), random.randint(0, movement_height-1)]
+                initial_pos = [random.randint(0, canvas_width-1), random.randint(0, canvas_height-1)]
                 while tuple(initial_pos) in all_initial_pos:
-                    initial_pos = [random.randint(0, movement_width-1), random.randint(0, movement_height-1)]
+                    initial_pos = [random.randint(0, canvas_width-1), random.randint(0, canvas_height-1)]
                 all_initial_pos.add(tuple(initial_pos))
 
                 # print(initial_pos)
                 if creature_class == Plant:
                     creature = creature_class(initial_pos, canvas)
                 else:
-                    creature = creature_class(initial_pos, total_moves, canvas)
+                    creature = creature_class(initial_pos, total_moves, canvas, rabbits, foxes, plants)
                 creatures.append(creature)
 
     initialize_start_positions(foxes, n_foxes, Fox)
