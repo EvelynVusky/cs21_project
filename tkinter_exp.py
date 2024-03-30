@@ -10,7 +10,7 @@ canvas_width = 500
 canvas_lock = threading.Lock()
 
 window = tk.Tk() 
-window.title("Rabbits + Plants Simulation")
+window.title("Foxes, Rabbits, & Plants Simulation")
 canvas = tk.Canvas(window, width=canvas_width, height=canvas_height, bg="white")
 canvas.pack()
 
@@ -38,7 +38,7 @@ class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, total_moves): 
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
-        self.size_step = 10
+        self.size_step = 20
         self.total_moves = total_moves
         self.canvas_object = canvas.create_oval(initial_pos[0],
                                                         initial_pos[1],
@@ -168,21 +168,40 @@ class Rabbit(Creature, threading.Thread):
             if (len(plants) == 0):
                 return None
             return min(plants, key=self.getDistanceTo)
+    
+    def findClosestPredator(self):
+        # filtered_plants = [x for x in plants if hasValue(x)]
+        with fox_lock:
+            if (len(foxes) == 0):
+                return None
+            return min(foxes, key=self.getDistanceTo)
 
     # find the closest food item and moves towards it
-    def moveTowardsClosestFood(self):
+    def moveForSurvival(self):
         food = self.findClosestFood()
-        if (not food):
+        predator = self.findClosestPredator()
+
+        if not predator and not food:
             return self.position[0], self.position[1], 0, 0, None
+        
+        distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
+        distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
-        dx = food.position[0] - self.position[0]
-        dy = food.position[1] - self.position[1]
+        if distance_to_food < distance_to_predator:
+            dx = food.position[0] - self.position[0]
+            dy = food.position[1] - self.position[1]
+            
+        elif predator:
+            dx = self.position[0] - predator.position[0]
+            dy = self.position[1] - predator.position[1]
 
-        if self.getDistanceTo(food) > self.size_step:
-            dx = int((dx / self.getDistanceTo(food)) * self.size_step)
-            dy = int((dy / self.getDistanceTo(food)) * self.size_step)
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance > self.size_step:
+            dx = int((dx / distance) * self.size_step)
+            dy = int((dy / distance) * self.size_step)
 
         return self.position[0] + dx, self.position[1] + dy, dx, dy, food
+
 
     def getEaten(self):
         with rabbit_lock:
@@ -193,7 +212,7 @@ class Rabbit(Creature, threading.Thread):
         
     def run(self): 
         while self.total_moves > 0:
-            new_col, new_row, dx, dy, food = self.moveTowardsClosestFood()
+            new_col, new_row, dx, dy, food = self.moveForSurvival()
             if (not food):
                 new_col, new_row, dx, dy = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
