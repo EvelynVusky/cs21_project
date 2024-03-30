@@ -33,7 +33,7 @@ class Rabbit(Creature, threading.Thread):
                                                         initial_pos[1],
                                                         initial_pos[0]+20,
                                                         initial_pos[1]+20, 
-                                                        fill="red")
+                                                        fill="blue")
     
     def generate_position(self):
         col, row = self.position[0], self.position[1]
