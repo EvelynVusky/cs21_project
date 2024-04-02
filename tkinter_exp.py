@@ -2,14 +2,30 @@ import tkinter as tk
 import threading
 from time import sleep
 import random
-import sys
 import math
+import argparse
+
+parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
+
+parser.add_argument('--plants', metavar='PLANTS', type=int, default=15,
+                    help='Number of plants at the start of the simulation')
+parser.add_argument('--rabbits', metavar='RABBITS', type=int, default=5,
+                    help='Number of rabbits at the start of the simulation')
+parser.add_argument('--foxes', metavar='FOXES', type=int, default=1,
+                    help='Number of foxes at the start of the simulation')
+parser.add_argument('--height', metavar='HEIGHT', type=int, default=500,
+                    help='Height of the canvas')
+parser.add_argument('--width', metavar='WIDTH', type=int, default=500,
+                    help='Width of the canvas')
+
+args = parser.parse_args()
+
 
 # Simulation Parameters
 health = 20 # starting health of rabbits and foxes
 
 # Plant info
-n_plants = 15
+n_plants = args.plants
 foodValue = 1 # number of times food can be eated before destruction
 plantRate = 0.25 # likelyhood that any plant will reproduce each time step
 maxPlants = 250 # max number of plants
@@ -17,7 +33,7 @@ minPlantDistance = 30 # minimum distance plants must be from each other
 maxPlantDistance = 50 # maximum distance plants can be from their parent
 
 # rabbit info
-n_rabbits = 5
+n_rabbits = args.rabbits
 rabbitMetabolism = 5 # amount of health that rabbits get back per food
 rabbitStomachSize = 30 # max amount of health a rabbit can have
 rabbitRate = 0.1 # likelyhood that any healthy rabbit will reproduce each time step
@@ -26,7 +42,7 @@ minRabbitDistance = 30 # minimum distance plants must be from each other
 maxRabbitDistance = 50 # maximum distance plants can be from their parent
 
 # fox info
-n_foxes = 1
+n_foxes = args.foxes
 foxMetabolism = 5 # amount of health that rabbits get back per food
 foxStomachSize = 30 # max amount of health a rabbit can have
 foxRate = 0.01 # likelyhood that any healthy rabbit will reproduce each time step
@@ -34,8 +50,8 @@ maxFoxes = 50 # max number of plants
 minFoxDistance = 30 # minimum distance plants must be from each other
 maxFoxDistance = 50 # maximum distance plants can be from their parent
 
-canvas_height = 500
-canvas_width = 500
+canvas_height = args.height
+canvas_width = args.width
 
 canvas_lock = threading.Lock()
 
@@ -222,7 +238,7 @@ class Rabbit(Creature, threading.Thread):
     def findClosestPredator(self):
         return self.findClosest(foxes, fox_lock)
 
-    # find the closest food item and moves towards it
+    # find the closest food item and moves towards it, move away from predators
     def moveForSurvival(self):
         food = self.findClosestFood()
         predator = self.findClosestPredator()
