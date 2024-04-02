@@ -222,7 +222,7 @@ class Rabbit(Creature, threading.Thread):
     def findClosestPredator(self):
         return self.findClosest(foxes, fox_lock)
 
-    # find the closest food item and moves towards it
+    # find the closest food item and moves towards it, move away from predators
     def moveForSurvival(self):
         food = self.findClosestFood()
         predator = self.findClosestPredator()
