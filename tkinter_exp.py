@@ -5,18 +5,28 @@ import random
 import math
 import argparse
 
+def capped_int(value, cap):
+    ivalue = int(value)
+
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid int value" % value)
+    elif ivalue > cap:
+        raise argparse.ArgumentTypeError("%s exceeds the limit of %s" % (value, cap))
+    
+    return ivalue
+
 parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
 
-parser.add_argument('--plants', metavar='PLANTS', type=int, default=15,
-                    help='Number of plants at the start of the simulation')
-parser.add_argument('--rabbits', metavar='RABBITS', type=int, default=5,
-                    help='Number of rabbits at the start of the simulation')
-parser.add_argument('--foxes', metavar='FOXES', type=int, default=1,
-                    help='Number of foxes at the start of the simulation')
-parser.add_argument('--height', metavar='HEIGHT', type=int, default=500,
-                    help='Height of the canvas')
-parser.add_argument('--width', metavar='WIDTH', type=int, default=500,
-                    help='Width of the canvas')
+parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 400), default=15,
+                    help='Number of plants at the start of the simulation; Max number of foxes to start with is 400')
+parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=5,
+                    help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
+parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=1,
+                    help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
+parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 500), default=500,
+                    help='Height of the canvas; Max height is 500')
+parser.add_argument('--width', metavar='WIDTH', type=lambda x: capped_int(x, 500), default=500,
+                    help='Width of the canvas; Max width is 500')
 
 args = parser.parse_args()
 
