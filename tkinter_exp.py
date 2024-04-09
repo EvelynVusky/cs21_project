@@ -17,45 +17,49 @@ def capped_int(value, cap):
 
 parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
 
-parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 400), default=15,
+parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 400), default=60,
                     help='Number of plants at the start of the simulation; Max number of foxes to start with is 400')
-parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=5,
+parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=20,
                     help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
-parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=1,
+parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=4,
                     help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
-parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 500), default=500,
+parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
                     help='Height of the canvas; Max height is 500')
-parser.add_argument('--width', metavar='WIDTH', type=lambda x: capped_int(x, 500), default=500,
+parser.add_argument('--width', metavar='WIDTH', type=lambda x: capped_int(x, 1500), default=500,
                     help='Width of the canvas; Max width is 500')
 
 args = parser.parse_args()
 
 
 # Simulation Parameters
-health = 20 # starting health of rabbits and foxes
+health = 200 # starting health of rabbits and foxes
 
 # Plant info
 n_plants = args.plants
 foodValue = 1 # number of times food can be eated before destruction
-plantRate = 0.25 # likelyhood that any plant will reproduce each time step
-maxPlants = 250 # max number of plants
+plantRate = 0.015 # likelyhood that any plant will reproduce each time step
+maxPlants = 500 # max number of plants
 minPlantDistance = 30 # minimum distance plants must be from each other
 maxPlantDistance = 50 # maximum distance plants can be from their parent
 
 # rabbit info
 n_rabbits = args.rabbits
-rabbitMetabolism = 5 # amount of health that rabbits get back per food
-rabbitStomachSize = 30 # max amount of health a rabbit can have
-rabbitRate = 0.1 # likelyhood that any healthy rabbit will reproduce each time step
+rabbitMetabolism = 50 # amount of health that rabbits get back per food
+rabbitStomachSize = 300 # max amount of health a rabbit can have
+rabbitSpeed = 1
+rabbitRate = 0.008 # likelyhood that any healthy rabbit will reproduce each time step
+fearFactor = 0.5
 maxRabbits = 100 # max number of plants
 minRabbitDistance = 30 # minimum distance plants must be from each other
 maxRabbitDistance = 50 # maximum distance plants can be from their parent
 
 # fox info
 n_foxes = args.foxes
-foxMetabolism = 5 # amount of health that rabbits get back per food
-foxStomachSize = 30 # max amount of health a rabbit can have
-foxRate = 0.01 # likelyhood that any healthy rabbit will reproduce each time step
+foxMetabolism = 50 # amount of health that rabbits get back per food
+foxStomachSize = 300 # max amount of health a rabbit can have
+foxSpeed = 2
+foxRate = 0.0013 # likelyhood that any healthy rabbit will reproduce each time step
+avoidOthers = 0.3
 maxFoxes = 50 # max number of plants
 minFoxDistance = 30 # minimum distance plants must be from each other
 maxFoxDistance = 50 # maximum distance plants can be from their parent
@@ -78,6 +82,10 @@ rabbit_lock = threading.Lock()
 plant_lock = threading.Lock()
 fox_lock = threading.Lock()
 
+semList = []
+semListLock = threading.Lock()
+
+
 def check_bounds(col, row): 
     if col < 10 or col >= canvas_width-10:
         return False
@@ -93,6 +101,8 @@ class Creature:
 
     # finds the distance between this creature and another (float)
     def getDistanceTo(self, otherCreature):
+        if (self == otherCreature):
+            return 10000
         return math.sqrt(((self.position[0] - otherCreature.position[0]) ** 2) + ((self.position[1] - otherCreature.position[1]) ** 2))
 
     def getDistanceToCoord(self, x, y):
@@ -120,6 +130,30 @@ class Creature:
         nearest = self.findClosestCreatureTo(x, y, creatureList, lock)
         return nearest.getDistanceToCoord(x, y)
 
+    def waitForOtherThreads(self):
+        global semList
+        notLast = True
+        mySem = threading.Semaphore(value=0)
+        with semListLock:
+            with plant_lock:
+                with rabbit_lock:
+                    with fox_lock:
+                        numArrived = len(semList)
+                        # print(numArrived, "/", (len(plants) + len(rabbits) + len(foxes)))
+                        if (numArrived + 1 == (len(plants) + len(rabbits) + len(foxes))):
+                            notLast = False
+                            # print("here")
+                            sleep(.01)
+                            for sem in semList:
+                                sem.release()
+                            semList = []
+                        else:
+                            semList.append(mySem)
+  
+        if notLast:
+            mySem.acquire()
+
+            
     # for reproduction, generates a new point
     def genNewPosition(self, minDist, maxDist, creatureList, lock):
         angle = random.uniform(0, 2 * math.pi)
@@ -155,7 +189,7 @@ class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
-        self.size_step = 20
+        self.size_step = foxSpeed
         self.health = health
         self.canvas_object = canvas.create_oval(initial_pos[0]-10,
                                                         initial_pos[1]-10,
@@ -167,8 +201,37 @@ class Fox(Creature, threading.Thread):
     def findClosestFood(self):
         return self.findClosest(rabbits, rabbit_lock)
 
+    def findClosestPredator(self):
+        return self.findClosest(foxes, fox_lock)
+
+    def moveForSurvival(self):
+        food = self.findClosestFood()
+        predator = self.findClosestPredator()
+
+        if not predator and not food:
+            return self.position[0], self.position[1], 0, 0, None
+        
+        distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
+        distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
+
+        if (distance_to_food * avoidOthers) < (distance_to_predator * (1 - avoidOthers)):
+            dx = food.position[0] - self.position[0]
+            dy = food.position[1] - self.position[1]
+            
+        elif predator:
+            dx = self.position[0] - predator.position[0]
+            dy = self.position[1] - predator.position[1]
+
+        distance = math.sqrt(dx**2 + dy**2)
+        if distance > self.size_step:
+            dx = (dx / distance) * self.size_step
+            dy = (dy / distance) * self.size_step
+            # print(dx, dy)
+
+        return self.position[0] + dx, self.position[1] + dy, dx, dy, food
+
     # find the closest food item and moves towards it
-    def moveTowardsClosestFood(self):
+    def movetowardsClosestFood(self):
         food = self.findClosestFood()
         if (not food):
             return self.position[0], self.position[1], 0, 0, None
@@ -177,8 +240,9 @@ class Fox(Creature, threading.Thread):
         dy = food.position[1] - self.position[1]
 
         if self.getDistanceTo(food) > self.size_step:
-            dx = int((dx / self.getDistanceTo(food)) * self.size_step)
-            dy = int((dy / self.getDistanceTo(food)) * self.size_step)
+            dx = (dx / self.getDistanceTo(food) * self.size_step)
+            dy = (dy / self.getDistanceTo(food) * self.size_step)
+            # print(dx, dy)
 
         return self.position[0] + dx, self.position[1] + dy, dx, dy, food
 
@@ -186,6 +250,7 @@ class Fox(Creature, threading.Thread):
         if len(foxes) < maxFoxes:
             x, y = self.genNewPosition(minFoxDistance, maxFoxDistance, foxes, fox_lock)
             if (x and y):
+                # print("new fox")
                 newFox = Fox([x, y], health)
                 with fox_lock:
                     foxes.append(newFox)
@@ -193,7 +258,7 @@ class Fox(Creature, threading.Thread):
 
     def run(self): 
         while self.health > 0:
-            new_col, new_row, dx, dy, food = self.moveTowardsClosestFood()
+            new_col, new_row, dx, dy, food = self.moveForSurvival()
             if (not food):
                 new_col, new_row, dx, dy = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
@@ -201,15 +266,13 @@ class Fox(Creature, threading.Thread):
 
                 self.position[0], self.position[1] = new_col, new_row
                 with canvas_lock:
-                    canvas.move(self.canvas_object, dx, dy)
-                    canvas.update()
+                    canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 10, int(self.position[1] + dy) - 10)
             else:
                 self.position[0], self.position[1] = new_col, new_row
                 if (self.getDistanceTo(food) < 1 and food.getEaten()):
                     self.health = max(self.health + foxMetabolism, foxStomachSize)
                 with canvas_lock:
-                    canvas.move(self.canvas_object, dx, dy)
-                    canvas.update()
+                    canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 10, int(self.position[1] + dy) - 10)
 
             # do reproduction
             if self.health > 10 and random.random() < foxRate:
@@ -217,7 +280,7 @@ class Fox(Creature, threading.Thread):
 
             self.health -= 1
             # print(self.health)
-            sleep(1)
+            self.waitForOtherThreads()
             # Some kind of barrier here to prevent rabbits from taking more
             # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
@@ -225,15 +288,14 @@ class Fox(Creature, threading.Thread):
                 foxes.remove(self)
         with canvas_lock:
             canvas.delete(self.canvas_object)
-            canvas.update()
-        print("fox is done")
+        # print("fox is done")
 
 
 class Rabbit(Creature, threading.Thread):    
     def __init__(self, initial_pos, health): 
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
-        self.size_step = 10
+        self.size_step = rabbitSpeed
         self.health = health
         self.canvas_object = canvas.create_oval(initial_pos[0]-7,
                                                         initial_pos[1]-7,
@@ -259,7 +321,7 @@ class Rabbit(Creature, threading.Thread):
         distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
         distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
-        if distance_to_food < distance_to_predator:
+        if (distance_to_food * fearFactor) < (distance_to_predator * (1 - fearFactor)):
             dx = food.position[0] - self.position[0]
             dy = food.position[1] - self.position[1]
             
@@ -269,8 +331,9 @@ class Rabbit(Creature, threading.Thread):
 
         distance = math.sqrt(dx**2 + dy**2)
         if distance > self.size_step:
-            dx = int((dx / distance) * self.size_step)
-            dy = int((dy / distance) * self.size_step)
+            dx = (dx / distance) * self.size_step
+            dy = (dy / distance) * self.size_step
+            # print(dx, dy)
 
         return self.position[0] + dx, self.position[1] + dy, dx, dy, food
 
@@ -280,7 +343,6 @@ class Rabbit(Creature, threading.Thread):
                 rabbits.remove(self)
                 with canvas_lock:
                     canvas.delete(self.canvas_object)
-                    canvas.update()
                 return True
             else:
                 return False
@@ -289,6 +351,7 @@ class Rabbit(Creature, threading.Thread):
         if len(rabbits) < maxRabbits:
             x, y = self.genNewPosition(minRabbitDistance, maxRabbitDistance, rabbits, rabbit_lock)
             if (x and y):
+                # print("new rabbit")
                 newRabbit = Rabbit([x, y], health)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
@@ -304,15 +367,13 @@ class Rabbit(Creature, threading.Thread):
 
                 self.position[0], self.position[1] = new_col, new_row
                 with canvas_lock:
-                    canvas.move(self.canvas_object, dx, dy)
-                    canvas.update()
+                    canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 7, int(self.position[1] + dy) - 7)
             else:
                 self.position[0], self.position[1] = new_col, new_row
                 if ((self.getDistanceTo(food) < 1) and food.getEaten()):
                     self.health = max(self.health + rabbitMetabolism, rabbitStomachSize)
                 with canvas_lock:
-                    canvas.move(self.canvas_object, dx, dy)
-                    canvas.update()
+                    canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 7, int(self.position[1] + dy) - 7)
 
             # do reproduction
             if self.health > 10 and random.random() < rabbitRate:
@@ -320,7 +381,7 @@ class Rabbit(Creature, threading.Thread):
 
             self.health -= 1
             # print(self.health)
-            sleep(1)
+            self.waitForOtherThreads()
             # Some kind of barrier here to prevent rabbits from taking more
             # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
@@ -329,8 +390,7 @@ class Rabbit(Creature, threading.Thread):
                 rabbits.remove(self)
         with canvas_lock:
             canvas.delete(self.canvas_object)
-            canvas.update()
-        print("rabbit is done")
+        # print("rabbit is done")
 
 
 #PLANTS
@@ -350,6 +410,7 @@ class Plant(Creature, threading.Thread):
         if len(plants) < maxPlants:
             x, y = self.genNewPosition(minPlantDistance, maxPlantDistance, plants, plant_lock)
             if (x and y):
+                # print("new plant")
                 newPlant = Plant([x, y], foodValue, plantRate)
                 with plant_lock:
                     plants.append(newPlant)
@@ -359,8 +420,8 @@ class Plant(Creature, threading.Thread):
         while self.foodValue > 0:
             if random.random() < self.reproduceRate:
                 self.reproduce()
-            sleep(1)
-        print("plant done")
+            self.waitForOtherThreads()
+        # print("plant done")
 
     def getEaten(self):
         if (self.foodValue > 0):
@@ -370,7 +431,6 @@ class Plant(Creature, threading.Thread):
                     plants.remove(self)
                 with canvas_lock:
                     canvas.delete(self.canvas_object)
-                    canvas.update()
             return True
         else:
             return False
