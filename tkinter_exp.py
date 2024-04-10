@@ -3,187 +3,8 @@ import threading
 from time import sleep
 import random
 import math
-import argparse
-
-def capped_int(value, cap):
-    ivalue = int(value)
-
-    if ivalue <= 0:
-        raise argparse.ArgumentTypeError("%s is an invalid int value" % value)
-    elif ivalue > cap:
-        raise argparse.ArgumentTypeError("%s exceeds the limit of %s" % (value, cap))
-    
-    return ivalue
-
-parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
-
-parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 400), default=60,
-                    help='Number of plants at the start of the simulation; Max number of foxes to start with is 400')
-parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=20,
-                    help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
-parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=4,
-                    help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
-parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
-                    help='Height of the canvas; Max height is 500')
-parser.add_argument('--width', metavar='WIDTH', type=lambda x: capped_int(x, 1500), default=500,
-                    help='Width of the canvas; Max width is 500')
-
-args = parser.parse_args()
-
-
-# Simulation Parameters
-health = 200 # starting health of rabbits and foxes
-
-# Plant info
-n_plants = args.plants
-foodValue = 1 # number of times food can be eated before destruction
-plantRate = 0.015 # likelyhood that any plant will reproduce each time step
-maxPlants = 500 # max number of plants
-minPlantDistance = 30 # minimum distance plants must be from each other
-maxPlantDistance = 50 # maximum distance plants can be from their parent
-
-# rabbit info
-n_rabbits = args.rabbits
-rabbitMetabolism = 50 # amount of health that rabbits get back per food
-rabbitStomachSize = 300 # max amount of health a rabbit can have
-rabbitSpeed = 1
-rabbitRate = 0.008 # likelyhood that any healthy rabbit will reproduce each time step
-fearFactor = 0.5
-maxRabbits = 100 # max number of plants
-minRabbitDistance = 30 # minimum distance plants must be from each other
-maxRabbitDistance = 50 # maximum distance plants can be from their parent
-
-# fox info
-n_foxes = args.foxes
-foxMetabolism = 50 # amount of health that rabbits get back per food
-foxStomachSize = 300 # max amount of health a rabbit can have
-foxSpeed = 2
-foxRate = 0.0013 # likelyhood that any healthy rabbit will reproduce each time step
-avoidOthers = 0.3
-maxFoxes = 50 # max number of plants
-minFoxDistance = 30 # minimum distance plants must be from each other
-maxFoxDistance = 50 # maximum distance plants can be from their parent
-
-canvas_height = args.height
-canvas_width = args.width
-
-canvas_lock = threading.Lock()
-
-window = tk.Tk() 
-window.title("Foxes, Rabbits, & Plants Simulation")
-canvas = tk.Canvas(window, width=canvas_width, height=canvas_height, bg="white")
-canvas.pack()
-
-rabbits = []
-plants = []
-foxes = []
-
-rabbit_lock = threading.Lock()
-plant_lock = threading.Lock()
-fox_lock = threading.Lock()
-
-semList = []
-semListLock = threading.Lock()
-
-
-def check_bounds(col, row): 
-    if col < 10 or col >= canvas_width-10:
-        return False
-    elif row < 10 or row >= canvas_height-10:
-        return False
-    else:
-        return True
-
-class Creature:
-    def __init__(self, initial_pos):
-        self.position = initial_pos
-        random.seed()
-
-    # finds the distance between this creature and another (float)
-    def getDistanceTo(self, otherCreature):
-        if (self == otherCreature):
-            return 10000
-        return math.sqrt(((self.position[0] - otherCreature.position[0]) ** 2) + ((self.position[1] - otherCreature.position[1]) ** 2))
-
-    def getDistanceToCoord(self, x, y):
-        return math.sqrt(((self.position[0] - x) ** 2) + ((self.position[1] - y) ** 2))
-
-    # gets the closest creature of given type
-    def findClosest(self, creatureList, lock):
-        with lock:
-            if (len(creatureList) == 0):
-                return None
-            return min(creatureList, key=self.getDistanceTo)
-
-    # gets the closest creature of specific type to the location
-    def findClosestCreatureTo(self, x, y, creatureList, lock):
-        def dist(creature):
-            return math.sqrt(((x - creature.position[0]) ** 2) + ((y - creature.position[1]) ** 2))
-        with lock:
-            if (len(creatureList) == 0):
-                return None
-            return min(creatureList, key=dist)
-
-    # choose a point, creature type and returns the distance between the point
-    # and closest creature of that type
-    def checkDensity(self, x, y, creatureList, lock):
-        nearest = self.findClosestCreatureTo(x, y, creatureList, lock)
-        return nearest.getDistanceToCoord(x, y)
-
-    def waitForOtherThreads(self):
-        global semList
-        notLast = True
-        mySem = threading.Semaphore(value=0)
-        with semListLock:
-            with plant_lock:
-                with rabbit_lock:
-                    with fox_lock:
-                        numArrived = len(semList)
-                        # print(numArrived, "/", (len(plants) + len(rabbits) + len(foxes)))
-                        if (numArrived + 1 == (len(plants) + len(rabbits) + len(foxes))):
-                            notLast = False
-                            # print("here")
-                            sleep(.01)
-                            for sem in semList:
-                                sem.release()
-                            semList = []
-                        else:
-                            semList.append(mySem)
-  
-        if notLast:
-            mySem.acquire()
-
-            
-    # for reproduction, generates a new point
-    def genNewPosition(self, minDist, maxDist, creatureList, lock):
-        angle = random.uniform(0, 2 * math.pi)
-        distance = random.uniform(minDist, maxDist)
-        x = self.position[0] + int(distance * math.cos(angle))
-        y = self.position[1] + int(distance * math.sin(angle))
-        numTries = 10
-        while numTries > 0:
-            if check_bounds(x,y) and (self.checkDensity(x, y, creatureList, lock) > minDist):
-                return x, y
-            numTries -= 1
-        return None, None
-
-    def generate_position(self):
-        col, row = self.position[0], self.position[1]
-        dx, dy = 0, 0
-        direction = random.randint(1, 4)
-        if (direction == 1): ## above
-            row -= self.size_step
-            dy = -self.size_step
-        elif (direction == 2): ## right
-            col += self.size_step
-            dx = self.size_step
-        elif (direction == 3): ## left
-            col -= self.size_step
-            dx = -self.size_step
-        else: ## below
-            row += self.size_step
-            dy = self.size_step
-        return col, row, dx, dy
+from global_stuff import *
+from creature import *
 
 class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
@@ -280,7 +101,7 @@ class Fox(Creature, threading.Thread):
 
             self.health -= 1
             # print(self.health)
-            self.waitForOtherThreads()
+            self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
             # Some kind of barrier here to prevent rabbits from taking more
             # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
@@ -349,6 +170,7 @@ class Rabbit(Creature, threading.Thread):
 
     def reproduce(self):
         if len(rabbits) < maxRabbits:
+            print("rabbiting")
             x, y = self.genNewPosition(minRabbitDistance, maxRabbitDistance, rabbits, rabbit_lock)
             if (x and y):
                 # print("new rabbit")
@@ -381,7 +203,7 @@ class Rabbit(Creature, threading.Thread):
 
             self.health -= 1
             # print(self.health)
-            self.waitForOtherThreads()
+            self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
             # Some kind of barrier here to prevent rabbits from taking more
             # than one "turn" before other rabbits due to thread sleep
             # print("rabbit moved")
@@ -420,7 +242,7 @@ class Plant(Creature, threading.Thread):
         while self.foodValue > 0:
             if random.random() < self.reproduceRate:
                 self.reproduce()
-            self.waitForOtherThreads()
+            self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
         # print("plant done")
 
     def getEaten(self):
