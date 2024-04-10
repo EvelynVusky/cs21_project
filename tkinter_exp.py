@@ -12,6 +12,7 @@ class Fox(Creature, threading.Thread):
         threading.Thread.__init__(self)
         self.size_step = foxSpeed
         self.health = health
+        self.target = None
         self.canvas_object = canvas.create_oval(initial_pos[0]-10,
                                                         initial_pos[1]-10,
                                                         initial_pos[0]+10,
@@ -30,16 +31,18 @@ class Fox(Creature, threading.Thread):
         predator = self.findClosestPredator()
 
         if not predator and not food:
-            return self.position[0], self.position[1], 0, 0, None
+            return self.position[0], self.position[1], None
         
         distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
         distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
         if (distance_to_food * avoidOthers) < (distance_to_predator * (1 - avoidOthers)):
+            self.target = food
             dx = food.position[0] - self.position[0]
             dy = food.position[1] - self.position[1]
             
         elif predator:
+            self.target = predator
             dx = self.position[0] - predator.position[0]
             dy = self.position[1] - predator.position[1]
 
@@ -49,7 +52,7 @@ class Fox(Creature, threading.Thread):
             dy = (dy / distance) * self.size_step
             # print(dx, dy)
 
-        return self.position[0] + dx, self.position[1] + dy, dx, dy, food
+        return self.position[0] + dx, self.position[1] + dy, self.target
 
     def reproduce(self):
         if len(foxes) < maxFoxes:
@@ -63,23 +66,23 @@ class Fox(Creature, threading.Thread):
 
     def run(self): 
         while self.health > 0:
-            new_col, new_row, dx, dy, food = self.moveForSurvival()
-            if (not food):
-                new_col, new_row, dx, dy = self.generate_position()
-                while(not check_bounds(new_col, new_row)):
-                    print("im in here!", new_col, new_row)
-                    new_col, new_row, dx, dy = (self.generate_position()) 
-
-                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
-                with canvas_lock:
-                    canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
-            else:
-                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
-                if (self.getDistanceTo(food) < 1 and food.getEaten()):
+            new_col, new_row, target = self.moveForSurvival()
+            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            
+            if isinstance(target, Rabbit):
+                if (self.getDistanceTo(target) < 1 and target.getEaten()):
                     self.health = max(self.health + foxMetabolism, foxStomachSize)
-                with canvas_lock:
-                    canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
+            elif target == None:
+                new_col, new_row = self.generate_position()
+                while(not check_bounds(new_col, new_row)):
+                    #print("im in here!", new_col, new_row)
+                    new_col, new_row = self.generate_position()
 
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            
+            with canvas_lock:
+                canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
+            
             # do reproduction
             if self.health > foxReproductionCutoff and random.random() < foxRate:
                 self.reproduce()
@@ -103,6 +106,7 @@ class Rabbit(Creature, threading.Thread):
         threading.Thread.__init__(self)
         self.size_step = rabbitSpeed
         self.health = health
+        self.target = None
         self.canvas_object = canvas.create_oval(initial_pos[0]-7,
                                                         initial_pos[1]-7,
                                                         initial_pos[0]+7,
@@ -122,16 +126,18 @@ class Rabbit(Creature, threading.Thread):
         predator = self.findClosestPredator()
 
         if not predator and not food:
-            return self.position[0], self.position[1], 0, 0, None
+            return self.position[0], self.position[1], None
         
         distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
         distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
         if (distance_to_food * fearFactor) < (distance_to_predator * (1 - fearFactor)):
+            self.target = food
             dx = food.position[0] - self.position[0]
             dy = food.position[1] - self.position[1]
             
         elif predator:
+            self.target = predator
             dx = self.position[0] - predator.position[0]
             dy = self.position[1] - predator.position[1]
 
@@ -141,8 +147,8 @@ class Rabbit(Creature, threading.Thread):
             dy = (dy / distance) * self.size_step
             # print(dx, dy)
 
-        return self.position[0] + dx, self.position[1] + dy, dx, dy, food
-
+        return self.position[0] + dx, self.position[1] + dy, self.target
+    
     def getEaten(self):
         with rabbit_lock:
             if self.health > 0:
@@ -162,21 +168,21 @@ class Rabbit(Creature, threading.Thread):
 
     def run(self): 
         while self.health > 0 and self in rabbits:
-            new_col, new_row, dx, dy, food = self.moveForSurvival()
-            if (not food):
-                new_col, new_row, dx, dy = self.generate_position()
+            new_col, new_row, target = self.moveForSurvival()
+            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+
+            if isinstance(target, Plant):
+                if ((self.getDistanceTo(target) < 1) and target.getEaten()):
+                    self.health = max(self.health + rabbitMetabolism, rabbitStomachSize)
+            elif target == None:
+                new_col, new_row = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
-                    new_col, new_row, dx, dy = (self.generate_position()) 
+                    new_col, new_row = self.generate_position()
 
                 self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
-                with canvas_lock:
-                    canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
-            else:
-                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
-                if ((self.getDistanceTo(food) < 1) and food.getEaten()):
-                    self.health = max(self.health + rabbitMetabolism, rabbitStomachSize)
-                with canvas_lock:
-                    canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
+                
+            with canvas_lock:
+                canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
 
             # do reproduction
             if self.health > rabbitReproductionCutoff and random.random() < rabbitRate:

@@ -93,4 +93,4 @@ class Creature:
             dx = -self.size_step
         else: ## below
             dy = self.size_step
-        return self.position[0] + dx, self.position[1] + dy, dx, dy
+        return self.position[0] + dx, self.position[1] + dy
