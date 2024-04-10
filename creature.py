@@ -51,11 +51,14 @@ class Creature:
                 with rabbit_lock:
                     with fox_lock:
                         numArrived = len(semList)
+                        # print("rabbits: ", len(rabbits))
+                        # print("foxes: ", len(foxes))
                         # print(numArrived, "/", (len(plants) + len(rabbits) + len(foxes)))
                         if (numArrived + 1 == (len(plants) + len(rabbits) + len(foxes))):
                             notLast = False
                             # print("here")
                             sleep(.01)
+                            # print("releasing ", len(semList))
                             for sem in semList:
                                 sem.release()
                             semList = []
@@ -72,7 +75,6 @@ class Creature:
         distance = random.uniform(minDist, maxDist)
         x = int(self.position[0] + distance * math.cos(angle))
         y = int(self.position[1] + distance * math.sin(angle))
-        print(x, y)
         numTries = 10
         while numTries > 0:
             if check_bounds(x,y) and (self.checkDensity(x, y, creatureList, lock) > minDist):
@@ -81,19 +83,14 @@ class Creature:
         return None, None
 
     def generate_position(self):
-        col, row = self.position[0], self.position[1]
         dx, dy = 0, 0
         direction = random.randint(1, 4)
         if (direction == 1): ## above
-            row -= self.size_step
             dy = -self.size_step
         elif (direction == 2): ## right
-            col += self.size_step
             dx = self.size_step
         elif (direction == 3): ## left
-            col -= self.size_step
             dx = -self.size_step
         else: ## below
-            row += self.size_step
             dy = self.size_step
-        return col, row, dx, dy
+        return self.position[0] + dx, self.position[1] + dy, dx, dy

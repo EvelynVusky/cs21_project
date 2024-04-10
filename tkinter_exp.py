@@ -67,18 +67,21 @@ class Fox(Creature, threading.Thread):
             if (not food):
                 new_col, new_row, dx, dy = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
+                    print("im in here!", new_col, new_row)
                     new_col, new_row, dx, dy = (self.generate_position()) 
 
-                self.position[0], self.position[1] = new_col, new_row
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+                with canvas_lock:
+                    canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
             else:
-                self.position[0], self.position[1] = new_col, new_row
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
                 if (self.getDistanceTo(food) < 1 and food.getEaten()):
                     self.health = max(self.health + foxMetabolism, foxStomachSize)
-            with canvas_lock:
-                canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 10, int(self.position[1] + dy) - 10)
+                with canvas_lock:
+                    canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
 
             # do reproduction
-            if self.health > 10 and random.random() < foxRate:
+            if self.health > foxReproductionCutoff and random.random() < foxRate:
                 self.reproduce()
 
             self.health -= 1
@@ -91,7 +94,7 @@ class Fox(Creature, threading.Thread):
                 foxes.remove(self)
         with canvas_lock:
             canvas.delete(self.canvas_object)
-        # print("fox is done")
+        print("fox is done")
 
 
 class Rabbit(Creature, threading.Thread):    
@@ -142,20 +145,16 @@ class Rabbit(Creature, threading.Thread):
 
     def getEaten(self):
         with rabbit_lock:
-            if self in rabbits:
-                rabbits.remove(self)
-                with canvas_lock:
-                    canvas.delete(self.canvas_object)
+            if self.health > 0:
+                self.health = 0
                 return True
             else:
                 return False
 
     def reproduce(self):
         if len(rabbits) < maxRabbits:
-            print("rabbiting")
             x, y = self.genNewPosition(minRabbitDistance, maxRabbitDistance, rabbits, rabbit_lock)
             if (x and y):
-                # print("new rabbit")
                 newRabbit = Rabbit([x, y], health)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
@@ -169,16 +168,18 @@ class Rabbit(Creature, threading.Thread):
                 while(not check_bounds(new_col, new_row)):
                     new_col, new_row, dx, dy = (self.generate_position()) 
 
-                self.position[0], self.position[1] = new_col, new_row
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+                with canvas_lock:
+                    canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
             else:
-                self.position[0], self.position[1] = new_col, new_row
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
                 if ((self.getDistanceTo(food) < 1) and food.getEaten()):
                     self.health = max(self.health + rabbitMetabolism, rabbitStomachSize)
-            with canvas_lock:
-                canvas.moveto(self.canvas_object, int(self.position[0] + dx) - 7, int(self.position[1] + dy) - 7)
+                with canvas_lock:
+                    canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
 
             # do reproduction
-            if self.health > 10 and random.random() < rabbitRate:
+            if self.health > rabbitReproductionCutoff and random.random() < rabbitRate:
                 self.reproduce()
 
             self.health -= 1
