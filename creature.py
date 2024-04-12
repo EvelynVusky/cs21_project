@@ -42,6 +42,28 @@ class Creature:
         nearest = self.findClosestCreatureTo(x, y, creatureList, lock)
         return nearest.getDistanceToCoord(x, y)
 
+
+    def findAngle(self, food, predator, rabbit):
+        distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
+        distance_to_rabbit = float('inf') if rabbit is None else self.getDistanceTo(rabbit)
+        distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
+        foodAngle = 0 if food is None else math.atan2(food.position[1] - self.position[1], food.position[0] - self.position[0])
+        rabbitAngle = 0 if rabbit is None else math.atan2(rabbit.position[1] - self.position[1], rabbit.position[0] - self.position[0])
+        rabbitAngle = (rabbitAngle + math.pi) % (math.pi * 2)
+        predAngle = 0 if predator is None else math.atan2(predator.position[1] - self.position[1], predator.position[0] - self.position[0])
+        predAngle = (predAngle + math.pi) % (math.pi * 2)
+
+        foodFactor = 1 / (distance_to_food)
+        predFactor = 1 / (distance_to_predator)
+        rabbbitFactor = 1 / distance_to_rabbit
+        totalFactor = foodFactor + predFactor + rabbbitFactor
+        foodFactor = foodFactor / totalFactor
+        predFactor = predFactor / totalFactor
+        rabbbitFactor = rabbbitFactor / totalFactor
+
+        totalAngle = foodAngle * foodFactor + predAngle * predFactor + rabbitAngle * rabbbitFactor
+        return totalAngle
+
     def waitForOtherThreads(self, plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock):
         global semList
         notLast = True

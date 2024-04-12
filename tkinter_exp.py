@@ -120,34 +120,41 @@ class Rabbit(Creature, threading.Thread):
     def findClosestPredator(self):
         return self.findClosest(foxes, fox_lock)
 
+    def findClosestRabbit(self):
+        return self.findClosest(rabbits, rabbit_lock)
+    
     # find the closest food item and moves towards it, move away from predators
     def moveForSurvival(self):
         food = self.findClosestFood()
         predator = self.findClosestPredator()
+        rabbit = self.findClosestRabbit()
 
         if not predator and not food:
             return self.position[0], self.position[1], None
         
-        distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
-        distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
+        # distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
+        # distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
-        if (distance_to_food * fearFactor) < (distance_to_predator * (1 - fearFactor)):
-            self.target = food
-            dx = food.position[0] - self.position[0]
-            dy = food.position[1] - self.position[1]
+        dx = math.cos(self.findAngle(food, predator, rabbit)) * self.size_step
+        dy = math.sin(self.findAngle(food, predator, rabbit)) * self.size_step
+
+        # if (distance_to_food * fearFactor) < (distance_to_predator * (1 - fearFactor)):
+        #     self.target = food
+        #     dx = food.position[0] - self.position[0]
+        #     dy = food.position[1] - self.position[1]
             
-        elif predator:
-            self.target = predator
-            dx = self.position[0] - predator.position[0]
-            dy = self.position[1] - predator.position[1]
+        # elif predator:
+        #     self.target = predator
+        #     dx = self.position[0] - predator.position[0]
+        #     dy = self.position[1] - predator.position[1]
 
-        distance = math.sqrt(dx**2 + dy**2)
-        if distance > self.size_step:
-            dx = (dx / distance) * self.size_step
-            dy = (dy / distance) * self.size_step
-            # print(dx, dy)
+        # distance = math.sqrt(dx**2 + dy**2)
+        # if distance > self.size_step:
+        #     dx = (dx / distance) * self.size_step
+        #     dy = (dy / distance) * self.size_step
+        #     # print(dx, dy)
 
-        return self.position[0] + dx, self.position[1] + dy, self.target
+        return self.position[0] + dx, self.position[1] + dy, food
     
     def getEaten(self):
         with rabbit_lock:

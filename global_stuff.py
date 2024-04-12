@@ -21,7 +21,7 @@ parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 4
                     help='Number of plants at the start of the simulation; Max number of foxes to start with is 400')
 parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=100,
                     help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
-parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=10,
+parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=0,
                     help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
 parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
                     help='Height of the canvas; Max height is 500')
