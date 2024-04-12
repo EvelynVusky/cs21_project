@@ -89,9 +89,9 @@ semList = []
 semListLock = threading.Lock()
 
 def check_bounds(col, row): 
-    if col < 0 or col > canvas_width:
+    if col < 1 or col > canvas_width:
         return False
-    elif row < 0 or row > canvas_height:
+    elif row < 1 or row > canvas_height:
         return False
     else:
         return True
