@@ -15,11 +15,11 @@ class Fox(Creature, threading.Thread):
         self.size_step = foxSpeed
         self.health = health
         self.target = None
-        self.canvas_object = canvas.create_oval(initial_pos[0]-10,
-                                                        initial_pos[1]-10,
-                                                        initial_pos[0]+10,
-                                                        initial_pos[1]+10, 
-                                                        fill="red")   
+        self.canvas_object = canvas.create_polygon([initial_pos[0] - 10, initial_pos[1] - 10,  
+                                                initial_pos[0] + 10, initial_pos[1] - 10,  
+                                                initial_pos[0], initial_pos[1] + 10],    
+                                               fill="red",             
+                                               outline='black')    
 
     # gets the closest edible creature
     def findClosestFood(self):
