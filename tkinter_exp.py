@@ -5,6 +5,7 @@ import random
 import math
 from global_stuff import *
 from creature import *
+from gene import *
 
 class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
@@ -101,17 +102,18 @@ class Fox(Creature, threading.Thread):
 
 
 class Rabbit(Creature, threading.Thread):    
-    def __init__(self, initial_pos, health): 
+    def __init__(self, initial_pos, genes):
         Creature.__init__(self, initial_pos)
         threading.Thread.__init__(self)
-        self.size_step = rabbitSpeed
-        self.health = health
+        self.genes = genes
+        self.size_step = genes.speed
+        self.health = genes.startingHealth
         self.target = None
         self.canvas_object = canvas.create_oval(initial_pos[0]-7,
                                                         initial_pos[1]-7,
                                                         initial_pos[0]+7,
                                                         initial_pos[1]+7, 
-                                                        fill="blue")
+                                                        fill=rgb_to_hex(genes.color))
 
     # we should make this detect if there is no food on the map
     def findClosestFood(self):
@@ -123,20 +125,39 @@ class Rabbit(Creature, threading.Thread):
     def findClosestRabbit(self):
         return self.findClosest(rabbits, rabbit_lock)
     
-    # find the closest food item and moves towards it, move away from predators
-    def moveForSurvival(self):
+    def generatePriorityList(self):
         food = self.findClosestFood()
         predator = self.findClosestPredator()
         rabbit = self.findClosestRabbit()
 
-        if not predator and not food:
-            return self.position[0], self.position[1], None
+        priorities = []
+
+        if food:
+            priorities.append((food.position[0], food.position[1], self.genes.hungerFactor))
+
+        if predator:
+            priorities.append((predator.position[0], predator.position[1], self.genes.fearFactor * -1))
+
+        if rabbit:
+            if self.getDistanceTo(rabbit) < rabbitRadius:
+                priorities.append((rabbit.position[0], rabbit.position[1], self.genes.fearFactor * -1))
+
+        return priorities
+
+
+    # find the closest food item and moves towards it, move away from predators
+    def moveForSurvival(self):
+        food = self.findClosestFood()
+        # if not predator and not food:
+        #     return self.position[0], self.position[1], None
         
         # distance_to_food = float('inf') if food is None else self.getDistanceTo(food)
         # distance_to_predator = float('inf') if predator is None else self.getDistanceTo(predator)
 
-        dx = math.cos(self.findAngle(food, predator, rabbit)) * self.size_step
-        dy = math.sin(self.findAngle(food, predator, rabbit)) * self.size_step
+        dx, dy = self.findMovementVector(self.size_step, self.generatePriorityList())
+
+        # dx = math.cos(self.findAngle(food, predator, rabbit)) * self.size_step
+        # dy = math.sin(self.findAngle(food, predator, rabbit)) * self.size_step
 
         # if (distance_to_food * fearFactor) < (distance_to_predator * (1 - fearFactor)):
         #     self.target = food
@@ -168,10 +189,13 @@ class Rabbit(Creature, threading.Thread):
         if len(rabbits) < maxRabbits:
             x, y = self.genNewPosition(minRabbitDistance, maxRabbitDistance, rabbits, rabbit_lock)
             if (x and y):
-                newRabbit = Rabbit([x, y], health)
+                newGenes = self.genes.childGene()
+                newRabbit = Rabbit([x, y], newGenes)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
                 newRabbit.start()
+                return newGenes.startingHealth
+        return 0
 
     def run(self): 
         while self.health > 0 and self in rabbits:
@@ -179,21 +203,23 @@ class Rabbit(Creature, threading.Thread):
             self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
 
             if isinstance(target, Plant):
-                if ((self.getDistanceTo(target) < 1) and target.getEaten()):
+                if ((self.getDistanceTo(target) < 5) and target.getEaten()):
                     self.health = max(self.health + rabbitMetabolism, rabbitStomachSize)
-            elif target == None:
-                new_col, new_row = self.generate_position()
-                while(not check_bounds(new_col, new_row)):
-                    new_col, new_row = self.generate_position()
+            # elif target == None:
+            #     new_col, new_row = self.generate_position()
+            #     while(not check_bounds(new_col, new_row)):
+            #         new_col, new_row = self.generate_position()
 
-                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            #     self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
                 
             with canvas_lock:
                 canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
 
             # do reproduction
             if self.health > rabbitReproductionCutoff and random.random() < rabbitRate:
-                self.reproduce()
+                cost = self.reproduce()
+                # lose half the health we give to child
+                self.health -= (cost / 2)
 
             self.health -= 1
             # print(self.health)
@@ -265,6 +291,8 @@ def main():
 
                 if creature_class == Plant:
                     creature = creature_class(initial_pos, foodValue, plantRate)
+                elif creature_class == Rabbit:
+                    creature = creature_class(initial_pos, Gene(rabbitStartingGenes))
                 else:
                     creature = creature_class(initial_pos, health)
                 creatures.append(creature)

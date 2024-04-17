@@ -1,5 +1,6 @@
 import tkinter as tk
 import threading
+import math
 import argparse
 
 def clamp(value, min_val, max_val):
@@ -14,6 +15,19 @@ def capped_int(value, cap):
         raise argparse.ArgumentTypeError("%s exceeds the limit of %s" % (value, cap))
     
     return ivalue
+
+def rgb_to_hex(rgb):
+    r, g, b  = rgb
+    return f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+
+def normalize_vector(x, y):
+    magnitude = math.sqrt(x**2 + y**2)
+    if magnitude == 0:
+        return (0, 0, 0)  # To avoid division by zero
+    else:
+        normalized_x = x / magnitude
+        normalized_y = y / magnitude
+        return (normalized_x, normalized_y, magnitude)
 
 parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
 
@@ -46,15 +60,23 @@ minPlantDistance = 30 # minimum distance plants must be from each other
 maxPlantDistance = 6000 # maximum distance plants can be from their parent
 
 # rabbit info
+rabbitMutationRate = 0.05
 rabbitMetabolism = 60 # amount of health that rabbits get back per food
-rabbitStomachSize = 400 # max amount of health a rabbit can have
+rabbitStomachSize = 300 # max amount of health a rabbit can have
 rabbitSpeed = 1.2
 rabbitRate = 0.003 # likelyhood that any healthy rabbit will reproduce each time step
 rabbitReproductionCutoff = 100
-fearFactor = 0.75
+fearFactor = 1
+hungerFactor = 1
+avoidOthersFactor = 0.1
+rabbitRadius = 10
+rabbitColor = (50, 50, 200)
+rabbitHealth = 100
 maxRabbits = 150 # max number of rabbits
 minRabbitDistance = 30 # minimum distance rabbits must be from each other
 maxRabbitDistance = 50 # maximum distance rabbits can be from their parent
+
+rabbitStartingGenes = [rabbitMutationRate, rabbitMetabolism, rabbitStomachSize, rabbitSpeed, rabbitRate, rabbitReproductionCutoff, fearFactor, hungerFactor, avoidOthersFactor, rabbitColor, rabbitHealth]
 
 # fox info
 foxMetabolism = 50 # amount of health that fox get back per food
