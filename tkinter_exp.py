@@ -72,6 +72,7 @@ class Fox(Creature, threading.Thread):
             
             if isinstance(target, Rabbit):
                 if (self.getDistanceTo(target) < 1 and target.getEaten()):
+                    stats_collector.log_event('Rabbit was eaten', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                     self.health = max(self.health + foxMetabolism, foxStomachSize)
             elif target == None:
                 new_col, new_row = self.generate_position()
@@ -85,15 +86,16 @@ class Fox(Creature, threading.Thread):
             
             # do reproduction
             if self.health > foxReproductionCutoff and random.random() < foxRate:
+                stats_collector.log_event('New fox born', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 self.reproduce()
 
             self.health -= 1
             # print(self.health)
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
         with fox_lock:
+                stats_collector.log_event('Fox passed away', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 foxes.remove(self)
         with canvas_lock:
-            stats_collector.log_event('Rabbit Died', 'died at position {self.position}')
             canvas.delete(self.canvas_object)
 
 
@@ -226,6 +228,7 @@ class Rabbit(Creature, threading.Thread):
             # print("rabbit moved")
         with rabbit_lock:
             if self in rabbits:
+                stats_collector.log_event('Rabbit passed away', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 rabbits.remove(self)
         with canvas_lock:
             canvas.delete(self.canvas_object)
