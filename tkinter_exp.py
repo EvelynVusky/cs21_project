@@ -6,6 +6,7 @@ import math
 from global_stuff import *
 from creature import *
 from gene import *
+from stats_collector import *
 
 class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
@@ -59,7 +60,6 @@ class Fox(Creature, threading.Thread):
         if len(foxes) < maxFoxes:
             x, y = self.genNewPosition(minFoxDistance, maxFoxDistance, foxes, fox_lock)
             if (x and y):
-                # print("new fox")
                 newFox = Fox([x, y], health)
                 with fox_lock:
                     foxes.append(newFox)
@@ -76,7 +76,6 @@ class Fox(Creature, threading.Thread):
             elif target == None:
                 new_col, new_row = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
-                    #print("im in here!", new_col, new_row)
                     new_col, new_row = self.generate_position()
 
                 self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
@@ -91,14 +90,12 @@ class Fox(Creature, threading.Thread):
             self.health -= 1
             # print(self.health)
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
-            # Some kind of barrier here to prevent rabbits from taking more
-            # than one "turn" before other rabbits due to thread sleep
-            # print("rabbit moved")
         with fox_lock:
                 foxes.remove(self)
         with canvas_lock:
+            stats_collector.log_event('Rabbit Died', 'died at position {self.position}')
             canvas.delete(self.canvas_object)
-        print("fox is done")
+
 
 
 class Rabbit(Creature, threading.Thread):    
