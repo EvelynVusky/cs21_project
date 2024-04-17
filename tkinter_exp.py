@@ -86,7 +86,7 @@ class Fox(Creature, threading.Thread):
             
             # do reproduction
             if self.health > foxReproductionCutoff and random.random() < foxRate:
-                stats_collector.log_event('New fox born', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
+                stats_collector.log_event('New fox born', f'Born at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 self.reproduce()
 
             self.health -= 1
@@ -216,6 +216,7 @@ class Rabbit(Creature, threading.Thread):
 
             # do reproduction
             if self.health > rabbitReproductionCutoff and random.random() < rabbitRate:
+                stats_collector.log_event('New rabbit born', f'Born at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 cost = self.reproduce()
                 # lose half the health we give to child
                 self.health -= (cost / 2)
@@ -279,6 +280,8 @@ class Plant(Creature, threading.Thread):
 
 
 def main():
+    global stats_collector
+    stats_collector = StatsCollector()
 
     all_initial_pos = set()
             
