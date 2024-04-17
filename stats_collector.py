@@ -40,3 +40,15 @@ class StatsCollector:
             elif event_type == 'Rabbit was eaten':
                 self.total_rabbits_eaten += 1
                 self.average_rabbit_speed += creature.size_step
+    
+    def print_stats(self):
+        print("FINAL STATS FOR THIS SIMULATION: ")
+        print("Total Foxes Born: ", self.total_foxes_born)
+        print("Total Foxes Died: ", self.total_foxes_died)
+        print("Total Rabbits Born: ", self.total_rabbits_born)
+        print("Total Rabbits Eaten: ", self.total_rabbits_eaten)
+        print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died)
+        avg_rabbit_speed = self.average_rabbit_speed / (self.total_rabbits_eaten + self.total_rabbits_died)
+        print("Average Rabbit speed: ", avg_rabbit_speed)
+        avg_fox_speed = self.average_fox_speed / self.total_foxes_died
+        print("Average Fox speed: ", avg_fox_speed)

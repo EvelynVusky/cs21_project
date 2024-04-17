@@ -190,6 +190,7 @@ class Rabbit(Creature, threading.Thread):
             if (x and y):
                 newGenes = self.genes.childGene()
                 newRabbit = Rabbit([x, y], newGenes)
+                print("My new mutation rate: ", newRabbit.genes.mutationRate)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
                 newRabbit.start()
@@ -314,7 +315,7 @@ def main():
         fox.start()
     
     window.mainloop() ## this must be between the .start() and .join() function calls
-    window.quit()
+    
 
     for rabbit in rabbits: 
         rabbit.join()
@@ -322,9 +323,13 @@ def main():
     for fox in foxes:
         fox.join()
 
+    stats_collector.print_stats()
+
 
     # this does not print for some reason?
     print("Simulation Completed.")
+
+    window.quit()
 
 
 if __name__ == "__main__":

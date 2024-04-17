@@ -8,6 +8,10 @@ def _mutateValue(value, rate, min_val, max_val):
     newValue = value * (1 - random.uniform(-rate, rate))
     return clamp(newValue, min_val, max_val)
 
+def _mutateColor(value, rate, min_val, max_val):
+    newValue = value * (1 - random.uniform(-rate, rate))
+    return clamp(newValue, min_val, max_val)
+
 # this needs to be a different function because these values are linked
 # when speed increases efficency should decrease and vice versa
 # also I didn't add allow min/max parameters because that's a lot of params
@@ -46,7 +50,7 @@ class Gene:
         hunger = _mutateValue(self.hungerFactor, m, 0, 100)
         avoid = _mutateValue(self.avoidOthersFactor, m, 0, 100)
         r, g, b = self.color
-        color = (_mutateValue(r, m, 0, 255), _mutateValue(g, m, 0, 255), _mutateValue(b, m, 0, 255))
+        color = (_mutateValue(r, 2, 0, 255), _mutateValue(g, 2, 0, 255), _mutateValue(b, 2, 0, 255))
         #print(speed)
         health = _mutateValue(r, m, 0, cutoff)
         return Gene([m, meta, ssize, speed, rate, cutoff, fear, hunger, avoid, color, health])
