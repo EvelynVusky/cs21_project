@@ -38,9 +38,9 @@ parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x,
 parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=0,
                     help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
 parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
-                    help='Height of the canvas; Max height is 500')
+                    help='Height of the canvas; Max height is 1000')
 parser.add_argument('--width', metavar='WIDTH', type=lambda x: capped_int(x, 1500), default=500,
-                    help='Width of the canvas; Max width is 500')
+                    help='Width of the canvas; Max width is 1500')
 
 args = parser.parse_args()
 
