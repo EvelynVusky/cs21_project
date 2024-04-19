@@ -280,6 +280,30 @@ class Plant(Creature, threading.Thread):
             return False
 
 
+def draw_count(x1, y1, x2, y2, color, number):
+    square = canvas.create_rectangle(x1, y1, x2, y2, fill=color)
+    text = canvas.create_text((x1 + x2) / 2,
+                              (y1 + y2) / 2,
+                              text=str(number),
+                              fill="white",
+                              font=("Arial", 12))
+    return square, text
+
+def update_count(plant_cnt, rabbit_cnt, fox_cnt): 
+    # with canvas_lock: DONT NEED THIS
+    canvas.itemconfig(plant_cnt, text=str(len(plants)))
+    canvas.itemconfig(rabbit_cnt, text=str(len(rabbits)))
+    canvas.itemconfig(fox_cnt, text=str(len(foxes)))
+
+    global after_id
+    ## TODO: specify how long to update the counters?
+    after_id = canvas.after(2000, update_count, plant_cnt, rabbit_cnt, fox_cnt)
+
+    if sim_done:
+        canvas.after_cancel(after_id)
+
+sim_done = False
+
 def main():
     global stats_collector
     stats_collector = StatsCollector()
@@ -305,6 +329,15 @@ def main():
     initialize_start_positions(rabbits, n_rabbits, Rabbit)
     initialize_start_positions(plants, n_plants, Plant)
 
+
+    ## TODO: clean this up a bit?
+    count_width = canvas_width / 10
+    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_width, "green", len(plants))
+    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_width, "blue", len(rabbits))
+    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width, count_width, "red", len(foxes))
+
+    update_count(plant_cnt, rabbit_cnt, fox_cnt)
+
     for plant in plants:
         plant.start()
 
@@ -314,6 +347,7 @@ def main():
     for fox in foxes:
         fox.start()
     
+
     window.mainloop() ## this must be between the .start() and .join() function calls
     
 
@@ -325,6 +359,7 @@ def main():
 
     stats_collector.print_stats()
 
+    sim_done = True
 
     # this does not print for some reason?
     print("Simulation Completed.")
