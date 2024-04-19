@@ -289,11 +289,37 @@ def draw_count(x1, y1, x2, y2, color, number):
                               font=("Arial", 12))
     return square, text
 
+def get_rabbit_stats():
+    if (len(rabbits) > 0):
+        stats = []
+        speeds = [getattr(rabbit, 'size_step', None) for rabbit in rabbits]
+        avg_speed = sum(speeds) // len(speeds)
+        stats.append(avg_speed)
+
+        health = [getattr(rabbit, 'health', None) for rabbit in rabbits]
+        avg_health = sum(health) // len(health)   
+        stats.append(avg_health)
+    else: 
+        stats = [0, 0]
+
+    stats = [str(stat) for stat in stats]
+    return stats
+
 def update_count(plant_cnt, rabbit_cnt, fox_cnt): 
     # with canvas_lock: DONT NEED THIS
+    stats = get_rabbit_stats()
     canvas.itemconfig(plant_cnt, text=str(len(plants)))
-    canvas.itemconfig(rabbit_cnt, text=str(len(rabbits)))
+    canvas.itemconfig(rabbit_cnt, text=str(len(rabbits)) + 
+                                            "\n avg speed: " + 
+                                                stats[0] +  
+                                            "\n avg health: " + 
+                                                stats[1])
+
     canvas.itemconfig(fox_cnt, text=str(len(foxes)))
+    # TODO: delete below in case debugging not needed anymore
+    # print(len(foxes))
+    # print(len(plants))
+    # print(len(rabbits))
 
     global after_id
     ## TODO: specify how long to update the counters?
@@ -329,11 +355,16 @@ def main():
     initialize_start_positions(rabbits, n_rabbits, Rabbit)
     initialize_start_positions(plants, n_plants, Plant)
 
-
     ## TODO: clean this up a bit?
     count_width = canvas_width / 10
+    stats = get_rabbit_stats()
     plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_width, "green", len(plants))
-    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_width, "blue", len(rabbits))
+    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_width, "blue", 
+                                        str(len(rabbits)) + 
+                                            "\n avg speed: " + 
+                                                stats[0] +  
+                                            "\n avg health: " + 
+                                                stats[1])
     fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width, count_width, "red", len(foxes))
 
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
