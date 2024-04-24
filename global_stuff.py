@@ -68,6 +68,7 @@ rabbitRate = 0.003 # likelyhood that any healthy rabbit will reproduce each time
 rabbitReproductionCutoff = 100
 fearFactor = 1
 hungerFactor = 1
+generation = 1
 avoidOthersFactor = 0.1
 rabbitRadius = 10
 rabbitColor = (50, 50, 200)
@@ -76,7 +77,7 @@ maxRabbits = 150 # max number of rabbits
 minRabbitDistance = 30 # minimum distance rabbits must be from each other
 maxRabbitDistance = 50 # maximum distance rabbits can be from their parent
 
-rabbitStartingGenes = [rabbitMutationRate, rabbitMetabolism, rabbitStomachSize, rabbitSpeed, rabbitRate, rabbitReproductionCutoff, fearFactor, hungerFactor, avoidOthersFactor, rabbitColor, rabbitHealth]
+rabbitStartingGenes = [rabbitMutationRate, rabbitMetabolism, rabbitStomachSize, rabbitSpeed, rabbitRate, rabbitReproductionCutoff, fearFactor, hungerFactor, avoidOthersFactor, rabbitColor, rabbitHealth, generation]
 
 # fox info
 foxMetabolism = 50 # amount of health that fox get back per food
