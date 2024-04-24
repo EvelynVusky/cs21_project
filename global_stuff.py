@@ -32,7 +32,7 @@ def normalize_vector(x, y):
 parser = argparse.ArgumentParser(description="Parse simulation start configurations.")
 
 parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 400), default=200,
-                    help='Number of plants at the start of the simulation; Max number of foxes to start with is 400')
+                    help='Number of plants at the start of the simulation; Max number of plants to start with is 400')
 parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=100,
                     help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
 parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=0,
