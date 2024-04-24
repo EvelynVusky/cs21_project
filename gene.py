@@ -37,6 +37,7 @@ class Gene:
         self.avoidOthersFactor = startingGenes[8]
         self.color = startingGenes[9]
         self.startingHealth = startingGenes[10]
+        self.generation = startingGenes[11]
 
     def childGene(self):
         m = self.mutationRate
@@ -53,5 +54,6 @@ class Gene:
         color = (_mutateValue(r, 0.5, 0, 255), _mutateValue(g, 0.5, 0, 255), _mutateValue(b, 0.5, 0, 255))
         #print(speed)
         health = _mutateValue(r, m, 0, cutoff)
-        return Gene([m, meta, ssize, speed, rate, cutoff, fear, hunger, avoid, color, health])
+        generation = self.generation + 1
+        return Gene([m, meta, ssize, speed, rate, cutoff, fear, hunger, avoid, color, health, generation])
         
