@@ -61,14 +61,18 @@ class StatsCollector:
     def output_run_data(self):
         plant_pop = 200
         rabbit_pop = 100
-        file_path = 'output.txt'
+        file_path = 'output.csv'
         with open(file_path, 'w') as file:
             for event in self.events:
                 if event['event_type'] == 'New rabbit born':
                     rabbit_pop += 1
                 elif event['event_type'] == 'Rabbit passed away':
                     rabbit_pop -= 1
-                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(rabbit_pop) + "\n")
+                elif event['event_type'] == 'New plant born':
+                    plant_pop += 1
+                elif event['event_type'] == 'plant eaten':
+                    plant_pop -= 1
+                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(plant_pop) + "," + str(rabbit_pop) + "\n")
         
     
     def print_stats(self):

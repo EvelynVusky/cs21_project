@@ -218,8 +218,9 @@ class Rabbit(Creature, threading.Thread):
 
             # do reproduction
             if self.health > rabbitReproductionCutoff and random.random() < rabbitRate:
-                stats_collector.log_event('New rabbit born', f'Born at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 cost = self.reproduce()
+                if cost > 0:
+                    stats_collector.log_event('New rabbit born', f'Born at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                 # lose half the health we give to child
                 self.health -= (cost / 2)
 
@@ -254,6 +255,7 @@ class Plant(Creature, threading.Thread):
             if (x and y):
                 # print("new plant")
                 newPlant = Plant([x, y], foodValue, plantRate)
+                stats_collector.log_event('New plant born', f'Born at position ({newPlant.position[0]:.3f}, {newPlant.position[1]:.3f})', newPlant)
                 with plant_lock:
                     plants.append(newPlant)
                 newPlant.start()
@@ -270,6 +272,7 @@ class Plant(Creature, threading.Thread):
             self.foodValue -= 1
             if (self.foodValue == 0):
                 with plant_lock:
+                    stats_collector.log_event('plant eaten', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
                     plants.remove(self)
                 with canvas_lock:
                     canvas.delete(self.canvas_object)
