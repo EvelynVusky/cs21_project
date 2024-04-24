@@ -50,7 +50,7 @@ class Gene:
         hunger = _mutateValue(self.hungerFactor, m, 0, 100)
         avoid = _mutateValue(self.avoidOthersFactor, m, 0, 100)
         r, g, b = self.color
-        color = (_mutateValue(r, 2, 0, 255), _mutateValue(g, 2, 0, 255), _mutateValue(b, 2, 0, 255))
+        color = (_mutateValue(r, 0.5, 0, 255), _mutateValue(g, 0.5, 0, 255), _mutateValue(b, 0.5, 0, 255))
         #print(speed)
         health = _mutateValue(r, m, 0, cutoff)
         return Gene([m, meta, ssize, speed, rate, cutoff, fear, hunger, avoid, color, health])

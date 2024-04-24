@@ -111,6 +111,8 @@ fox_lock = threading.Lock()
 semList = []
 semListLock = threading.Lock()
 
+sim_done = False
+
 def check_bounds(col, row): 
     if col < 1 or col > canvas_width:
         return False

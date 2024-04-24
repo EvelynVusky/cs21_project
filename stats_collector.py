@@ -1,5 +1,5 @@
 import threading
-from datetime import datetime
+from datetime import datetime, time
 
 class StatsCollector:
     def __init__(self):
@@ -13,6 +13,7 @@ class StatsCollector:
         self.total_rabbit_generations = 0
         self.average_rabbit_speed = 0
         self.average_fox_speed = 0
+        self.startTime = datetime.now().time()
                 
     def log_event(self, event_type, details, creature):
         with self.lock:
@@ -23,7 +24,7 @@ class StatsCollector:
             }
             self.collect_stats(event_type, creature)
             self.events.append(event_info)
-            print(f"Logged: {event_type} at {event_info['timestamp']}: {details}")
+            # print(f"Logged: {event_type} at {event_info['timestamp']}: {details}")
     
     def collect_stats(self, event_type, creature):
         # generations = []
@@ -41,6 +42,32 @@ class StatsCollector:
                 self.total_rabbits_eaten += 1
                 self.average_rabbit_speed += creature.size_step
     
+    def time_difference_in_seconds(self, start_time, end_time):
+        # Convert time objects to datetime objects for calculation
+        start_datetime = datetime.combine(datetime.today(), start_time)
+        end_datetime = datetime.combine(datetime.today(), end_time)
+
+        # Calculate the difference
+        time_difference = end_datetime - start_datetime
+
+        # Extract the difference in seconds
+        difference_seconds = time_difference.total_seconds()
+        
+        return difference_seconds
+
+    def output_run_data(self):
+        plant_pop = 200
+        rabbit_pop = 100
+        file_path = 'output.txt'
+        with open(file_path, 'w') as file:
+            for event in self.events:
+                if event['event_type'] == 'New rabbit born':
+                    rabbit_pop += 1
+                elif event['event_type'] == 'Rabbit passed away':
+                    rabbit_pop -= 1
+                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(rabbit_pop) + "\n")
+        
+    
     def print_stats(self):
         print("FINAL STATS FOR THIS SIMULATION: ")
         print("Total Foxes Born: ", self.total_foxes_born)
@@ -48,7 +75,9 @@ class StatsCollector:
         print("Total Rabbits Born: ", self.total_rabbits_born)
         print("Total Rabbits Eaten: ", self.total_rabbits_eaten)
         print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died)
-        avg_rabbit_speed = self.average_rabbit_speed / (self.total_rabbits_eaten + self.total_rabbits_died)
-        print("Average Rabbit speed: ", avg_rabbit_speed)
-        avg_fox_speed = self.average_fox_speed / self.total_foxes_died
-        print("Average Fox speed: ", avg_fox_speed)
+        if (self.total_rabbits_died > 0):
+            avg_rabbit_speed = self.average_rabbit_speed / (self.total_rabbits_eaten + self.total_rabbits_died)
+            print("Average Rabbit speed: ", avg_rabbit_speed)
+        if (self.total_foxes_died > 0):
+            avg_fox_speed = self.average_fox_speed / self.total_foxes_died
+            print("Average Fox speed: ", avg_fox_speed)

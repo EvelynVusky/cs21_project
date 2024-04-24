@@ -7,6 +7,7 @@ from global_stuff import *
 from creature import *
 from gene import *
 from stats_collector import *
+import sys
 
 class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
@@ -66,7 +67,7 @@ class Fox(Creature, threading.Thread):
                 newFox.start()
 
     def run(self): 
-        while self.health > 0:
+        while self.health > 0 and not sim_done:
             new_col, new_row, target = self.moveForSurvival()
             self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
             
@@ -190,7 +191,7 @@ class Rabbit(Creature, threading.Thread):
             if (x and y):
                 newGenes = self.genes.childGene()
                 newRabbit = Rabbit([x, y], newGenes)
-                print("My new mutation rate: ", newRabbit.genes.mutationRate)
+                # print("My new mutation rate: ", newRabbit.genes.mutationRate)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
                 newRabbit.start()
@@ -225,9 +226,6 @@ class Rabbit(Creature, threading.Thread):
             self.health -= 1
             # print(self.health)
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
-            # Some kind of barrier here to prevent rabbits from taking more
-            # than one "turn" before other rabbits due to thread sleep
-            # print("rabbit moved")
         with rabbit_lock:
             if self in rabbits:
                 stats_collector.log_event('Rabbit passed away', f'Died at position ({self.position[0]:.3f}, {self.position[1]:.3f})', self)
@@ -261,7 +259,7 @@ class Plant(Creature, threading.Thread):
                 newPlant.start()
 
     def run(self):
-        while self.foodValue > 0:
+        while self.foodValue > 0 and not sim_done:
             if random.random() < self.reproduceRate:
                 self.reproduce()
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock, foxes, fox_lock)
@@ -328,7 +326,15 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
     if sim_done:
         canvas.after_cancel(after_id)
 
-sim_done = False
+def listen_to_user_input():
+    global sim_done
+    while True:
+        user_input = sys.stdin.readline().strip()
+        print(user_input)
+        if user_input == "q":
+            print("ending!")
+            sim_done = True
+            break
 
 def main():
     global stats_collector
@@ -369,6 +375,9 @@ def main():
 
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 
+    input_thread = threading.Thread(target=listen_to_user_input)
+    input_thread.start()
+
     for plant in plants:
         plant.start()
 
@@ -378,24 +387,16 @@ def main():
     for fox in foxes:
         fox.start()
     
-
     window.mainloop() ## this must be between the .start() and .join() function calls
-    
-
-    for rabbit in rabbits: 
-        rabbit.join()
-
-    for fox in foxes:
-        fox.join()
 
     stats_collector.print_stats()
+    stats_collector.output_run_data()
 
-    sim_done = True
+    # sim_done = True
 
     # this does not print for some reason?
     print("Simulation Completed.")
 
-    window.quit()
 
 
 if __name__ == "__main__":
