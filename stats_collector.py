@@ -32,6 +32,9 @@ class StatsCollector:
                 self.total_foxes_born += 1
             elif event_type == 'New rabbit born':
                 self.total_rabbits_born += 1
+                rabbit_generation = creature.genes.generation
+                if rabbit_generation > self.total_rabbit_generations:
+                    self.total_rabbit_generations = rabbit_generation
             elif event_type == 'Fox passed away':
                 self.total_foxes_died += 1
                 self.average_fox_speed += creature.size_step
@@ -81,3 +84,4 @@ class StatsCollector:
         if (self.total_foxes_died > 0):
             avg_fox_speed = self.average_fox_speed / self.total_foxes_died
             print("Average Fox speed: ", avg_fox_speed)
+        print("Total Rabbit Generations: ", self.total_rabbits_eaten, self.total_rabbit_generations)
