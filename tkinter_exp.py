@@ -68,7 +68,7 @@ class Fox(Creature, threading.Thread):
     def run(self): 
         while self.health > 0:
             new_col, new_row, target = self.moveForSurvival()
-            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
             
             if isinstance(target, Rabbit):
                 if (self.getDistanceTo(target) < 1 and target.getEaten()):
@@ -79,7 +79,7 @@ class Fox(Creature, threading.Thread):
                 while(not check_bounds(new_col, new_row)):
                     new_col, new_row = self.generate_position()
 
-                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+                self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
             
             with canvas_lock:
                 canvas.moveto(self.canvas_object, int(self.position[0]) - 10, int(self.position[1]) - 10)
@@ -200,7 +200,7 @@ class Rabbit(Creature, threading.Thread):
     def run(self): 
         while self.health > 0 and self in rabbits:
             new_col, new_row, target = self.moveForSurvival()
-            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
 
             if isinstance(target, Plant):
                 if ((self.getDistanceTo(target) < 5) and target.getEaten()):
@@ -210,7 +210,7 @@ class Rabbit(Creature, threading.Thread):
             #     while(not check_bounds(new_col, new_row)):
             #         new_col, new_row = self.generate_position()
 
-            #     self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, 0, canvas_height)
+            #     self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
                 
             with canvas_lock:
                 canvas.moveto(self.canvas_object, int(self.position[0]) - 7, int(self.position[1]) - 7)
@@ -338,9 +338,9 @@ def main():
             
     def initialize_start_positions(creatures, n_creatures, creature_class):
             for _ in range(n_creatures): 
-                initial_pos = [random.randint(0, canvas_width-1), random.randint(0, canvas_height-1)]
+                initial_pos = [random.randint(0, canvas_width-1), random.randint(count_bottom, canvas_height-1)]
                 while tuple(initial_pos) in all_initial_pos:
-                    initial_pos = [random.randint(0, canvas_width-1), random.randint(0, canvas_height-1)]
+                    initial_pos = [random.randint(0, canvas_width-1), random.randint(count_bottom, canvas_height-1)]
                 all_initial_pos.add(tuple(initial_pos))
 
                 if creature_class == Plant:
@@ -356,16 +356,16 @@ def main():
     initialize_start_positions(plants, n_plants, Plant)
 
     ## TODO: clean this up a bit?
-    count_width = canvas_width / 10
+    count_height = canvas_height / 10
     stats = get_rabbit_stats()
-    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_width, "green", len(plants))
-    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_width, "blue", 
+    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_height, "green", len(plants))
+    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_height, "blue", 
                                         str(len(rabbits)) + 
                                             "\n avg speed: " + 
                                                 stats[0] +  
                                             "\n avg health: " + 
                                                 stats[1])
-    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width, count_width, "red", len(foxes))
+    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width, count_height, "red", len(foxes))
 
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 

@@ -91,6 +91,7 @@ maxFoxDistance = 50 # maximum distance foxes can be from their parent
 
 canvas_height = args.height
 canvas_width = args.width
+count_bottom = (canvas_height / 10) + 10# y-coord of bottom count boxes
 
 window = tk.Tk() 
 window.title("Foxes, Rabbits, & Plants Simulation")
@@ -113,7 +114,7 @@ semListLock = threading.Lock()
 def check_bounds(col, row): 
     if col < 1 or col > canvas_width:
         return False
-    elif row < 1 or row > canvas_height:
+    elif row < count_bottom or row > canvas_height:
         return False
     else:
         return True
