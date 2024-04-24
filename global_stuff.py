@@ -90,9 +90,14 @@ maxFoxes = 50 # max number of foxes
 minFoxDistance = 30 # minimum distance foxes must be from each other
 maxFoxDistance = 50 # maximum distance foxes can be from their parent
 
+## stat box info
 canvas_height = args.height
 canvas_width = args.width
-count_bottom = (canvas_height / 10) + 10# y-coord of bottom count boxes
+count_height = int(canvas_height * .1)
+count_bottom = int(count_height + 10) # y-coord of bottom count boxes
+fox_color = "#ff8585"
+rabbit_color = "#7c9feb"
+plant_color = "#91c795"
 
 window = tk.Tk() 
 window.title("Foxes, Rabbits, & Plants Simulation")

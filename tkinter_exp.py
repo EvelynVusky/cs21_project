@@ -20,7 +20,7 @@ class Fox(Creature, threading.Thread):
                                                 initial_pos[0] + 10, initial_pos[1] - 10,  
                                                 initial_pos[0], initial_pos[1] + 10],    
                                                fill="red",             
-                                               outline='black')    
+                                               outline="")    
 
     # gets the closest edible creature
     def findClosestFood(self):
@@ -113,7 +113,8 @@ class Rabbit(Creature, threading.Thread):
                                                         initial_pos[1]-7,
                                                         initial_pos[0]+7,
                                                         initial_pos[1]+7, 
-                                                        fill=rgb_to_hex(genes.color))
+                                                        fill=rgb_to_hex(genes.color), 
+                                                        outline="")
 
     # we should make this detect if there is no food on the map
     def findClosestFood(self):
@@ -247,7 +248,8 @@ class Plant(Creature, threading.Thread):
                                                         initial_pos[1]-5,
                                                         initial_pos[0]+5,
                                                         initial_pos[1]+5, 
-                                                        fill="green")
+                                                        fill="green",
+                                                        outline="")
 
     def reproduce(self):
         if len(plants) < maxPlants:
@@ -282,12 +284,12 @@ class Plant(Creature, threading.Thread):
 
 
 def draw_count(x1, y1, x2, y2, color, number):
-    square = canvas.create_rectangle(x1, y1, x2, y2, fill=color)
+    square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
     text = canvas.create_text((x1 + x2) / 2,
                               (y1 + y2) / 2,
                               text=str(number),
-                              fill="white",
-                              font=("Arial", 12))
+                              fill="black",
+                              font=("Arial", int(count_height/6)))
     return square, text
 
 def get_rabbit_stats():
@@ -307,24 +309,24 @@ def get_rabbit_stats():
     return stats
 
 def update_count(plant_cnt, rabbit_cnt, fox_cnt): 
-    # with canvas_lock: DONT NEED THIS
+    ## get stats
     stats = get_rabbit_stats()
-    canvas.itemconfig(plant_cnt, text=str(len(plants)))
-    canvas.itemconfig(rabbit_cnt, text=str(len(rabbits)) + 
-                                            "\n avg speed: " + 
-                                                stats[0] +  
-                                            "\n avg health: " + 
-                                                stats[1])
+    plant_stats = "PLANTS\n" \
+                    + "population: " + str(len(plants))
+    rabbit_stats = "RABBITS\n" \
+                    + "population: " + str(len(rabbits)) \
+                    + "\n avg speed: " + stats[0] \
+                    + "\n avg health: " + stats[1]
+    fox_stats = "FOXES\n" \
+                + "population: " + str(len(foxes))
 
-    canvas.itemconfig(fox_cnt, text=str(len(foxes)))
-    # TODO: delete below in case debugging not needed anymore
-    # print(len(foxes))
-    # print(len(plants))
-    # print(len(rabbits))
+    canvas.itemconfig(plant_cnt, text=plant_stats)
+    canvas.itemconfig(rabbit_cnt, text=rabbit_stats)
+    canvas.itemconfig(fox_cnt, text=fox_stats)
 
     global after_id
     ## TODO: specify how long to update the counters?
-    after_id = canvas.after(2000, update_count, plant_cnt, rabbit_cnt, fox_cnt)
+    after_id = canvas.after(1000, update_count, plant_cnt, rabbit_cnt, fox_cnt)
 
     if sim_done:
         canvas.after_cancel(after_id)
@@ -364,17 +366,19 @@ def main():
     initialize_start_positions(rabbits, n_rabbits, Rabbit)
     initialize_start_positions(plants, n_plants, Plant)
 
-    ## TODO: clean this up a bit?
-    count_height = canvas_height / 10
+    ## draw count boxes
     stats = get_rabbit_stats()
-    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_height, "green", len(plants))
-    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_height, "blue", 
-                                        str(len(rabbits)) + 
-                                            "\n avg speed: " + 
-                                                stats[0] +  
-                                            "\n avg health: " + 
-                                                stats[1])
-    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width, count_height, "red", len(foxes))
+    plant_stats = "PLANTS\n" \
+                    + "population: " + str(len(plants))
+    rabbit_stats = "RABBITS\n" \
+                    + "population: " + str(len(rabbits)) \
+                    + "\n avg speed: " + stats[0] \
+                    + "\n avg health: " + stats[1]
+    fox_stats = "FOXES\n" \
+                + "population: " + str(len(foxes))
+    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_height, plant_color, plant_stats)
+    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_height, rabbit_color, rabbit_stats)
+    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width+3, count_height, fox_color, fox_stats)
 
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 
