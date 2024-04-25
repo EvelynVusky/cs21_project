@@ -335,9 +335,7 @@ def listen_to_user_input():
     global sim_done
     while True:
         user_input = sys.stdin.readline().strip()
-        print(user_input)
         if user_input == "q":
-            print("ending!")
             sim_done = True
             break
 

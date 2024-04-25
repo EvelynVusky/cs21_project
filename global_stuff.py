@@ -35,7 +35,7 @@ parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 4
                     help='Number of plants at the start of the simulation; Max number of plants to start with is 400')
 parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=100,
                     help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
-parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=0,
+parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=10,
                     help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
 parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
                     help='Height of the canvas; Max height is 1000')
@@ -64,7 +64,7 @@ rabbitMutationRate = 0.05
 rabbitMetabolism = 60 # amount of health that rabbits get back per food
 rabbitStomachSize = 300 # max amount of health a rabbit can have
 rabbitSpeed = 1.2
-rabbitRate = 0.003 # likelyhood that any healthy rabbit will reproduce each time step
+rabbitRate = 0.004 # likelyhood that any healthy rabbit will reproduce each time step
 rabbitReproductionCutoff = 100
 fearFactor = 1
 hungerFactor = 1

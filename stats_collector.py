@@ -1,4 +1,5 @@
 import threading
+from global_stuff import *
 from datetime import datetime, time
 
 class StatsCollector:
@@ -11,6 +12,7 @@ class StatsCollector:
         self.total_rabbits_died = 0
         self.total_rabbits_eaten = 0
         self.total_rabbit_generations = 0
+        self.total_rabbit_speed = 0
         self.average_rabbit_speed = 0
         self.average_fox_speed = 0
         self.startTime = datetime.now().time()
@@ -40,10 +42,14 @@ class StatsCollector:
                 self.average_fox_speed += creature.size_step
             elif event_type == 'Rabbit passed away':
                 self.total_rabbits_died += 1
-                self.average_rabbit_speed += creature.size_step
+                self.total_rabbit_speed += creature.size_step
+                if n_rabbits + self.total_rabbits_born > 0:
+                    self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
             elif event_type == 'Rabbit was eaten':
                 self.total_rabbits_eaten += 1
-                self.average_rabbit_speed += creature.size_step
+                self.total_rabbit_speed += creature.size_step
+                if n_rabbits + self.total_rabbits_born > 0:
+                    self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
     
     def time_difference_in_seconds(self, start_time, end_time):
         # Convert time objects to datetime objects for calculation
@@ -59,20 +65,25 @@ class StatsCollector:
         return difference_seconds
 
     def output_run_data(self):
-        plant_pop = 200
-        rabbit_pop = 100
+        plant_pop = n_plants
+        rabbit_pop = n_rabbits
+        fox_pop = n_foxes
         file_path = 'output.csv'
         with open(file_path, 'w') as file:
             for event in self.events:
                 if event['event_type'] == 'New rabbit born':
                     rabbit_pop += 1
-                elif event['event_type'] == 'Rabbit passed away':
+                elif event['event_type'] == 'Rabbit passed away' or event['event_type'] == 'Rabbit was eaten':
                     rabbit_pop -= 1
                 elif event['event_type'] == 'New plant born':
                     plant_pop += 1
                 elif event['event_type'] == 'plant eaten':
                     plant_pop -= 1
-                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(plant_pop) + "," + str(rabbit_pop) + "\n")
+                elif event['event_type'] == 'New fox born':
+                    fox_pop += 1
+                elif event['event_type'] == 'Fox passed away':
+                    fox_pop -= 1
+                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(plant_pop) + "," + str(rabbit_pop) + "," + str(fox_pop) + "\n")
         
     
     def print_stats(self):
@@ -82,9 +93,7 @@ class StatsCollector:
         print("Total Rabbits Born: ", self.total_rabbits_born)
         print("Total Rabbits Eaten: ", self.total_rabbits_eaten)
         print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died)
-        if (self.total_rabbits_died > 0):
-            avg_rabbit_speed = self.average_rabbit_speed / (self.total_rabbits_eaten + self.total_rabbits_died)
-            print("Average Rabbit speed: ", avg_rabbit_speed)
+        print("Average Rabbit speed: ", self.average_rabbit_speed)
         if (self.total_foxes_died > 0):
             avg_fox_speed = self.average_fox_speed / self.total_foxes_died
             print("Average Fox speed: ", avg_fox_speed)
