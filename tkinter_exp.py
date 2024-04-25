@@ -200,7 +200,7 @@ class Rabbit(Creature, threading.Thread):
         return 0
 
     def run(self): 
-        while self.health > 0 and self in rabbits:
+        while self.health > 0 and self in rabbits and not sim_done:
             new_col, new_row, target = self.moveForSurvival()
             self.position[0], self.position[1] = clamp(new_col, 0, canvas_width), clamp(new_row, count_bottom, canvas_height)
 

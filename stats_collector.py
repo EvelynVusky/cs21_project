@@ -12,8 +12,10 @@ class StatsCollector:
         self.total_rabbits_died = 0
         self.total_rabbits_eaten = 0
         self.total_rabbit_generations = 0
-        self.total_rabbit_speed = 0
+        self.total_rabbit_speed = n_rabbits * rabbitSpeed
         self.average_rabbit_speed = 0
+        self.total_rabbit_fear = n_rabbits * fearFactor
+        self.total_rabbit_hunger = n_rabbits * hungerFactor
         self.average_fox_speed = 0
         self.startTime = datetime.now().time()
                 
@@ -37,19 +39,18 @@ class StatsCollector:
                 rabbit_generation = creature.genes.generation
                 if rabbit_generation > self.total_rabbit_generations:
                     self.total_rabbit_generations = rabbit_generation
+                self.total_rabbit_speed += creature.size_step
+                self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
             elif event_type == 'Fox passed away':
                 self.total_foxes_died += 1
                 self.average_fox_speed += creature.size_step
             elif event_type == 'Rabbit passed away':
                 self.total_rabbits_died += 1
-                self.total_rabbit_speed += creature.size_step
-                if n_rabbits + self.total_rabbits_born > 0:
-                    self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
+                # self.total_rabbit_speed += creature.size_step
+                # if n_rabbits + self.total_rabbits_born > 0:
+                #     self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
             elif event_type == 'Rabbit was eaten':
                 self.total_rabbits_eaten += 1
-                self.total_rabbit_speed += creature.size_step
-                if n_rabbits + self.total_rabbits_born > 0:
-                    self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
     
     def time_difference_in_seconds(self, start_time, end_time):
         # Convert time objects to datetime objects for calculation
@@ -73,7 +74,7 @@ class StatsCollector:
             for event in self.events:
                 if event['event_type'] == 'New rabbit born':
                     rabbit_pop += 1
-                elif event['event_type'] == 'Rabbit passed away' or event['event_type'] == 'Rabbit was eaten':
+                elif event['event_type'] == 'Rabbit passed away':
                     rabbit_pop -= 1
                 elif event['event_type'] == 'New plant born':
                     plant_pop += 1
@@ -92,7 +93,8 @@ class StatsCollector:
         print("Total Foxes Died: ", self.total_foxes_died)
         print("Total Rabbits Born: ", self.total_rabbits_born)
         print("Total Rabbits Eaten: ", self.total_rabbits_eaten)
-        print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died)
+        print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died - self.total_rabbits_eaten)
+        print("Total Rabbit Deaths: ", self.total_rabbits_died)
         print("Average Rabbit speed: ", self.average_rabbit_speed)
         if (self.total_foxes_died > 0):
             avg_fox_speed = self.average_fox_speed / self.total_foxes_died

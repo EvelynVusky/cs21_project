@@ -35,7 +35,7 @@ parser.add_argument('--plants', metavar='PLANTS', type=lambda x: capped_int(x, 4
                     help='Number of plants at the start of the simulation; Max number of plants to start with is 400')
 parser.add_argument('--rabbits', metavar='RABBITS', type=lambda x: capped_int(x, 300), default=100,
                     help='Number of rabbits at the start of the simulation; Max number of rabbits to start with is 300')
-parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=10,
+parser.add_argument('--foxes', metavar='FOXES', type=lambda x: capped_int(x, 300), default=0,
                     help='Number of foxes at the start of the simulation; Max number of foxes to start with is 300')
 parser.add_argument('--height', metavar='HEIGHT', type=lambda x: capped_int(x, 1000), default=500,
                     help='Height of the canvas; Max height is 1000')
@@ -54,13 +54,13 @@ health = 200 # starting health of rabbits and foxes
 
 # Plant info
 foodValue = 1 # number of times food can be eated before destruction
-plantRate = 0.1 # likelyhood that any plant will reproduce each time step
+plantRate = 0.13 # likelyhood that any plant will reproduce each time step
 maxPlants = 500 # max number of plants
 minPlantDistance = 30 # minimum distance plants must be from each other
 maxPlantDistance = 6000 # maximum distance plants can be from their parent
 
 # rabbit info
-rabbitMutationRate = 0.05
+rabbitMutationRate = 0.2
 rabbitMetabolism = 60 # amount of health that rabbits get back per food
 rabbitStomachSize = 300 # max amount of health a rabbit can have
 rabbitSpeed = 1.2
@@ -116,6 +116,8 @@ fox_lock = threading.Lock()
 
 semList = []
 semListLock = threading.Lock()
+
+barrierCV = threading.Condition()
 
 sim_done = False
 

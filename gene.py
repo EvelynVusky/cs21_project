@@ -18,10 +18,10 @@ def _mutateColor(value, rate, min_val, max_val):
 def _mutateEnergyBudget(metabolism, stomachSize, speed, rate):
     m = random.uniform(-rate, rate)
     sChange = (1 - m)
-    eChange = (1 + m)
-    metabolism = clamp(metabolism * eChange, 0, 300)
-    stomachSize = clamp(stomachSize * eChange, 0, 1000)
-    speed = clamp(speed * sChange, 0, 10)
+    eChange = (1 + (5*m))
+    metabolism = clamp(metabolism * eChange, 0, 3000)
+    stomachSize = clamp(stomachSize * eChange, 0, 10000)
+    speed = clamp(speed * sChange, 0, 1.9)
     return metabolism, stomachSize, speed
 
 class Gene:
@@ -42,17 +42,15 @@ class Gene:
     def childGene(self):
         m = self.mutationRate
         meta, ssize, speed = _mutateEnergyBudget(self.metabolism, self.stomachSize, self.speed, m)
-        # meta = self.metabolism
-        # ssize = self.stomachSize
-        # speed = self.speed
         rate = self.reproduceRate
         cutoff = self.reproduceCutoff
         fear = _mutateValue(self.fearFactor, m, 0, 100)
         hunger = _mutateValue(self.hungerFactor, m, 0, 100)
+        print(speed)
+        # print(str(fear) + "," + str(hunger))
         avoid = _mutateValue(self.avoidOthersFactor, m, 0, 100)
         r, g, b = self.color
         color = (_mutateValue(r, 0.5, 0, 255), _mutateValue(g, 0.5, 0, 255), _mutateValue(b, 0.5, 0, 255))
-        #print(speed)
         health = _mutateValue(r, m, 0, cutoff)
         generation = self.generation + 1
         return Gene([m, meta, ssize, speed, rate, cutoff, fear, hunger, avoid, color, health, generation])
