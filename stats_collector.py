@@ -3,7 +3,7 @@ from global_stuff import *
 from datetime import datetime, time
 
 class StatsCollector:
-    def __init__(self):
+    def __init__(self, n_rabbits, n_plants, n_foxes, rabbitSpeed, fearFactor, hungerFactor):
         self.events = []
         self.lock = threading.Lock()
         self.total_foxes_born = 0
@@ -12,6 +12,9 @@ class StatsCollector:
         self.total_rabbits_died = 0
         self.total_rabbits_eaten = 0
         self.total_rabbit_generations = 0
+        self.initial_num_rabbit = n_rabbits
+        self.initial_num_plants = n_plants
+        self.initial_num_foxes = n_foxes
         self.total_rabbit_speed = n_rabbits * rabbitSpeed
         self.average_rabbit_speed = 0
         self.total_rabbit_fear = n_rabbits * fearFactor
@@ -40,15 +43,12 @@ class StatsCollector:
                 if rabbit_generation > self.total_rabbit_generations:
                     self.total_rabbit_generations = rabbit_generation
                 self.total_rabbit_speed += creature.size_step
-                self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
+                self.average_rabbit_speed = self.total_rabbit_speed / (self.initial_num_rabbit + self.total_rabbits_born)
             elif event_type == 'Fox passed away':
                 self.total_foxes_died += 1
                 self.average_fox_speed += creature.size_step
             elif event_type == 'Rabbit passed away':
                 self.total_rabbits_died += 1
-                # self.total_rabbit_speed += creature.size_step
-                # if n_rabbits + self.total_rabbits_born > 0:
-                #     self.average_rabbit_speed = self.total_rabbit_speed / (n_rabbits + self.total_rabbits_born)
             elif event_type == 'Rabbit was eaten':
                 self.total_rabbits_eaten += 1
     
@@ -66,9 +66,9 @@ class StatsCollector:
         return difference_seconds
 
     def output_run_data(self):
-        plant_pop = n_plants
-        rabbit_pop = n_rabbits
-        fox_pop = n_foxes
+        plant_pop = self.initial_num_plants
+        rabbit_pop = self.initial_num_rabbit
+        fox_pop =self.initial_num_foxes
         file_path = 'output.csv'
         with open(file_path, 'w') as file:
             for event in self.events:

@@ -3,7 +3,6 @@ import math
 from global_stuff import *
 
 
-
 def _mutateValue(value, rate, min_val, max_val):
     newValue = value * (1 - random.uniform(-rate, rate))
     return clamp(newValue, min_val, max_val)
@@ -46,8 +45,6 @@ class Gene:
         cutoff = self.reproduceCutoff
         fear = _mutateValue(self.fearFactor, m, 0, 100)
         hunger = _mutateValue(self.hungerFactor, m, 0, 100)
-        print(speed)
-        # print(str(fear) + "," + str(hunger))
         avoid = _mutateValue(self.avoidOthersFactor, m, 0, 100)
         r, g, b = self.color
         color = (_mutateValue(r, 0.5, 0, 255), _mutateValue(g, 0.5, 0, 255), _mutateValue(b, 0.5, 0, 255))

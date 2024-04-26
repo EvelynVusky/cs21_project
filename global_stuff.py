@@ -2,6 +2,7 @@ import tkinter as tk
 import threading
 import math
 import argparse
+from stats_collector import *
 
 def clamp(value, min_val, max_val):
     return max(min(value, max_val), min_val)
@@ -117,9 +118,10 @@ fox_lock = threading.Lock()
 semList = []
 semListLock = threading.Lock()
 
-barrierCV = threading.Condition()
-
 sim_done = False
+sim_done_event = threading.Event()
+
+stats_collector = StatsCollector(n_plants, n_plants, n_foxes, rabbitSpeed, fearFactor, hungerFactor)
 
 def check_bounds(col, row): 
     if col < 1 or col > canvas_width:
