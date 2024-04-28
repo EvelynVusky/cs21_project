@@ -17,6 +17,15 @@ def draw_count(x1, y1, x2, y2, color, number):
                               font=("Arial", int(count_height/6)))
     return square, text
 
+def draw_count(x1, y1, x2, y2, color, number):
+    square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
+    text = canvas.create_text((x1 + x2) / 2,
+                              (y1 + y2) / 2,
+                              text=str(number),
+                              fill="black",
+                              font=("Arial", int(count_height/6)))
+    return square, text
+
 def get_rabbit_stats():
     if (len(rabbits) > 0):
         stats = []
@@ -40,7 +49,7 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
                     + "population: " + str(len(plants))
     rabbit_stats = "RABBITS\n" \
                     + "population: " + str(len(rabbits)) \
-                    + "\n avg speed: " + stats[0] \
+                    + "\n avg speed: " + str(stats_collector.average_rabbit_speed) \
                     + "\n avg health: " + stats[1]
     fox_stats = "FOXES\n" \
                 + "population: " + str(len(foxes))
@@ -103,7 +112,7 @@ def main():
                     + "population: " + str(len(plants))
     rabbit_stats = "RABBITS\n" \
                     + "population: " + str(len(rabbits)) \
-                    + "\n avg speed: " + stats[0] \
+                    + "\n avg speed: " + str(rabbitSpeed) \
                     + "\n avg health: " + stats[1]
     fox_stats = "FOXES\n" \
                 + "population: " + str(len(foxes))
