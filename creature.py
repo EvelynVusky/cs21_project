@@ -324,7 +324,7 @@ class Fox(Creature, threading.Thread):
         while self.health > 0 and not sim_done_event.is_set():
             new_col, new_row, target = self.moveForSurvival()
             self.position[0] = clamp(new_col, 0, canvas_width)
-            self.position[1] = clamp(new_row, count_bottom, canvas_height)
+            self.position[1] = clamp(new_row, stat_bottom, canvas_height)
             
             if isinstance(target, Rabbit):
                 if (self.getDistanceTo(target) < 1 and target.getEaten()):
@@ -340,7 +340,7 @@ class Fox(Creature, threading.Thread):
                     new_col, new_row = self.generate_position()
 
                 self.position[0] = clamp(new_col, 0, canvas_width)
-                self.position[1] = clamp(new_row, count_bottom, canvas_height)
+                self.position[1] = clamp(new_row, stat_bottom, canvas_height)
             
             with canvas_lock:
                 canvas.moveto(self.canvas_object, int(self.position[0]) - 10,
@@ -504,7 +504,7 @@ class Rabbit(Creature, threading.Thread):
                               and not sim_done_event.is_set()):
             new_col, new_row, target = self.moveForSurvival()
             self.position[0] = clamp(new_col, 0, canvas_width)
-            self.position[1] = clamp(new_row, count_bottom, canvas_height)
+            self.position[1] = clamp(new_row, stat_bottom, canvas_height)
 
             if isinstance(target, Plant):
                 if ((self.getDistanceTo(target) < 5) and target.getEaten()):

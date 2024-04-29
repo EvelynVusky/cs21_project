@@ -49,7 +49,7 @@ def check_bounds(col, row):
     """
     if col < 1 or col > canvas_width:
         return False
-    elif row < count_bottom or row > canvas_height:
+    elif row < stat_bottom or row > canvas_height:
         return False
     else:
         return True
@@ -174,8 +174,8 @@ maxFoxDistance = 50 # maximum distance foxes can be from their parent
 
 canvas_height = args.height
 canvas_width = args.width
-count_height = int(canvas_height * .1)
-count_bottom = int(count_height + 10) # y-coord of bottom count boxes
+stat_height = int(canvas_height * .1)
+stat_bottom = int(stat_height + 10) # y-coord of bottom count boxes
 fox_color = "#ff8585"
 rabbit_color = "#7c9feb"
 plant_color = "#91c795"

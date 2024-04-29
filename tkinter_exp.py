@@ -8,65 +8,67 @@ from creature import *
 from gene import *
 import sys
 
-def draw_count(x1, y1, x2, y2, color, number):
+def draw_count(creature_name):
     """
-    Draws a count box on the canvas.
+    Draws a stats box on the canvas.
 
     Args:
-    - x1 (int): x-coordinate of the top-left corner of the count box.
-    - y1 (int): y-coordinate of the top-left corner of the count box.
-    - x2 (int): x-coordinate of the bottom-right corner of the count box.
-    - y2 (int): y-coordinate of the bottom-right corner of the count box.
-    - color (str): Color of the count box.
-    - number (int): Number to be displayed inside the count box.
+    - creature_name (str): name of species stat box to draw on canvas
 
     Returns:
     - tuple: A tuple containing the IDs of the rectangle and text objects created.
 
     """
+    if (creature_name == "plant") :
+        string = "PLANTS\n" \
+                    + "population: " + str(len(plants))
+        frac_of_screen_x1 = 0
+        frac_of_screen_x2 = 1 / 3
+        color = plant_color
+    elif (creature_name == "rabbit") :
+        string = "RABBITS\n" \
+                        + "population: " + str(len(rabbits)) \
+                        + "\n avg speed: " + str(rabbitSpeed) \
+                        + "\n avg health: " + str(get_avg_rabbit_health())
+        frac_of_screen_x1 = 1 / 3
+        frac_of_screen_x2 = 2 / 3
+        color = rabbit_color
+    else : 
+        string = "FOXES\n" \
+                + "population: " + str(len(foxes))
+        frac_of_screen_x1 = 2 / 3
+        frac_of_screen_x2 = 1
+        color = fox_color
+    
+    x1 = canvas_width * frac_of_screen_x1
+    x2 = canvas_width * frac_of_screen_x2
+    y1 = 0
+    y2 = stat_height
     square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
     text = canvas.create_text((x1 + x2) / 2,
                               (y1 + y2) / 2,
-                              text=str(number),
+                              text=str(string),
                               fill="black",
-                              font=("Arial", int(count_height/6)))
+                              font=("Arial", int(stat_height/6)))
     return square, text
 
-# def draw_count(x1, y1, x2, y2, color, number):
-#     square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-#     text = canvas.create_text((x1 + x2) / 2,
-#                               (y1 + y2) / 2,
-#                               text=str(number),
-#                               fill="black",
-#                               font=("Arial", int(count_height/6)))
-#     return square, text
 
-def get_rabbit_stats():
+def get_avg_rabbit_health():
     """
-    Calculates statistics for rabbits.
+    Calculates average health for rabbits.
 
-    If there are rabbits present, calculates the average speed and average health
-    of all rabbits. Otherwise, returns [0, 0] as default statistics.
+    If there are rabbits present, calculates the average health
+    of all rabbits. Otherwise, returns 0 as default average health.
 
     Returns:
-    - list of str: A list containing the average speed and average health of rabbits.
-                   If there are no rabbits, returns [0, 0].
+    - An int representing the average health of rabbits. If there are no 
+        rabbits, returns 0.
 
     """
     if (len(rabbits) > 0):
-        stats = []
-        speeds = [getattr(rabbit, 'size_step', None) for rabbit in rabbits]
-        avg_speed = sum(speeds) // len(speeds)
-        stats.append(avg_speed)
-
         health = [getattr(rabbit, 'health', None) for rabbit in rabbits]
-        avg_health = sum(health) // len(health)   
-        stats.append(avg_health)
-    else: 
-        stats = [0, 0]
-
-    stats = [str(stat) for stat in stats]
-    return stats
+        return sum(health) // len(health)   
+    return 0
 
 def update_count(plant_cnt, rabbit_cnt, fox_cnt): 
     """
@@ -77,13 +79,12 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
     on the canvas, and schedules the next update.
 
     """
-    stats = get_rabbit_stats()
     plant_stats = "PLANTS\n" \
                     + "population: " + str(len(plants))
     rabbit_stats = "RABBITS\n" \
-                    + "population: " + str(len(rabbits)) \
-                    + "\n avg speed: " + str(stats_collector.average_rabbit_speed) \
-                    + "\n avg health: " + stats[1]
+                + "population: " + str(len(rabbits)) \
+                + "\n avg speed: " + str(stats_collector.average_rabbit_speed) \
+                + "\n avg health: " + str(get_avg_rabbit_health())
     fox_stats = "FOXES\n" \
                 + "population: " + str(len(foxes))
 
@@ -92,7 +93,6 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
     canvas.itemconfig(fox_cnt, text=fox_stats)
 
     global after_id
-    ## TODO: specify how long to update the counters?
     after_id = canvas.after(1000, update_count, plant_cnt, rabbit_cnt, fox_cnt)
 
     if sim_done:
@@ -137,9 +137,11 @@ def main():
             
     def initialize_start_positions(creatures, n_creatures, creature_class):
             for _ in range(n_creatures): 
-                initial_pos = [random.randint(0, canvas_width-1), random.randint(count_bottom, canvas_height-1)]
+                initial_pos = [random.randint(0, canvas_width-1), 
+                                random.randint(stat_bottom, canvas_height-1)]
                 while tuple(initial_pos) in all_initial_pos:
-                    initial_pos = [random.randint(0, canvas_width-1), random.randint(count_bottom, canvas_height-1)]
+                    initial_pos = [random.randint(0, canvas_width-1), 
+                                random.randint(stat_bottom, canvas_height-1)]
                 all_initial_pos.add(tuple(initial_pos))
 
                 if creature_class == Plant:
@@ -154,20 +156,10 @@ def main():
     initialize_start_positions(rabbits, n_rabbits, Rabbit)
     initialize_start_positions(plants, n_plants, Plant)
 
-    ## draw count boxes
-    stats = get_rabbit_stats()
-    plant_stats = "PLANTS\n" \
-                    + "population: " + str(len(plants))
-    rabbit_stats = "RABBITS\n" \
-                    + "population: " + str(len(rabbits)) \
-                    + "\n avg speed: " + str(rabbitSpeed) \
-                    + "\n avg health: " + stats[1]
-    fox_stats = "FOXES\n" \
-                + "population: " + str(len(foxes))
-    plant_square, plant_cnt = draw_count(0, 0, canvas_width / 3, count_height, plant_color, plant_stats)
-    rabbit_square, rabbit_cnt = draw_count(canvas_width / 3, 0, canvas_width * 2 / 3, count_height, rabbit_color, rabbit_stats)
-    fox_square, fox_cnt = draw_count(canvas_width * 2 / 3, 0, canvas_width+3, count_height, fox_color, fox_stats)
-
+    ## draw stat boxes
+    plant_square, plant_cnt = draw_count("plant")
+    rabbit_square, rabbit_cnt = draw_count("rabbit")
+    fox_square, fox_cnt = draw_count("fox")
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 
     input_thread = threading.Thread(target=listen_to_user_input)
