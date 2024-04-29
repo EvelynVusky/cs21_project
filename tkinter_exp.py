@@ -16,7 +16,7 @@ def draw_count(creature_name):
     - creature_name (str): name of species stat box to draw on canvas
 
     Returns:
-    - tuple: A tuple containing the IDs of the rectangle and text objects created.
+    - tuple: A tuple containing IDs of the rectangle and text objects created.
 
     """
     if (creature_name == "plant") :
@@ -74,9 +74,9 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
     """
     Updates the count display for plants, rabbits, and foxes on the canvas.
 
-    Retrieves statistics for rabbits, constructs strings representing the population
-    and average attributes for plants, rabbits, and foxes, updates the count labels
-    on the canvas, and schedules the next update.
+    Retrieves statistics for rabbits, constructs strings representing the 
+    population and average attributes for plants, rabbits, and foxes, 
+    updates the count labels on the canvas, and schedules the next update.
 
     """
     plant_stats = "PLANTS\n" \
@@ -126,8 +126,9 @@ def main():
     """
     Main function for running the simulation.
 
-    Initializes starting positions for creatures (foxes, rabbits, plants), draws count boxes for each population,
-    updates count information, starts input listener thread, starts threads for each creature type,
+    Initializes starting positions for creatures (foxes, rabbits, plants), 
+    draw stats boxes for each population, updates count information, 
+    starts input listener thread, starts threads for each creature type,
     runs the simulation, prints statistics, and outputs run data.
 
     """
