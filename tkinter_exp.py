@@ -9,6 +9,21 @@ from gene import *
 import sys
 
 def draw_count(x1, y1, x2, y2, color, number):
+    """
+    Draws a count box on the canvas.
+
+    Args:
+    - x1 (int): x-coordinate of the top-left corner of the count box.
+    - y1 (int): y-coordinate of the top-left corner of the count box.
+    - x2 (int): x-coordinate of the bottom-right corner of the count box.
+    - y2 (int): y-coordinate of the bottom-right corner of the count box.
+    - color (str): Color of the count box.
+    - number (int): Number to be displayed inside the count box.
+
+    Returns:
+    - tuple: A tuple containing the IDs of the rectangle and text objects created.
+
+    """
     square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
     text = canvas.create_text((x1 + x2) / 2,
                               (y1 + y2) / 2,
@@ -17,16 +32,27 @@ def draw_count(x1, y1, x2, y2, color, number):
                               font=("Arial", int(count_height/6)))
     return square, text
 
-def draw_count(x1, y1, x2, y2, color, number):
-    square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-    text = canvas.create_text((x1 + x2) / 2,
-                              (y1 + y2) / 2,
-                              text=str(number),
-                              fill="black",
-                              font=("Arial", int(count_height/6)))
-    return square, text
+# def draw_count(x1, y1, x2, y2, color, number):
+#     square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
+#     text = canvas.create_text((x1 + x2) / 2,
+#                               (y1 + y2) / 2,
+#                               text=str(number),
+#                               fill="black",
+#                               font=("Arial", int(count_height/6)))
+#     return square, text
 
 def get_rabbit_stats():
+    """
+    Calculates statistics for rabbits.
+
+    If there are rabbits present, calculates the average speed and average health
+    of all rabbits. Otherwise, returns [0, 0] as default statistics.
+
+    Returns:
+    - list of str: A list containing the average speed and average health of rabbits.
+                   If there are no rabbits, returns [0, 0].
+
+    """
     if (len(rabbits) > 0):
         stats = []
         speeds = [getattr(rabbit, 'size_step', None) for rabbit in rabbits]
@@ -43,7 +69,14 @@ def get_rabbit_stats():
     return stats
 
 def update_count(plant_cnt, rabbit_cnt, fox_cnt): 
-    ## get stats
+    """
+    Updates the count display for plants, rabbits, and foxes on the canvas.
+
+    Retrieves statistics for rabbits, constructs strings representing the population
+    and average attributes for plants, rabbits, and foxes, updates the count labels
+    on the canvas, and schedules the next update.
+
+    """
     stats = get_rabbit_stats()
     plant_stats = "PLANTS\n" \
                     + "population: " + str(len(plants))
@@ -66,6 +99,13 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
         canvas.after_cancel(after_id)
 
 def listen_to_user_input():
+    """
+    Listens to user input from the command line.
+
+    If the user enters 'q', the function sets the global variable 'sim_done' to True,
+    signals the 'sim_done_event', releases all semaphores in 'semList', and terminates.
+
+    """
     global sim_done
     global semList
     while True:
@@ -83,6 +123,14 @@ def listen_to_user_input():
             break
 
 def main():
+    """
+    Main function for running the simulation.
+
+    Initializes starting positions for creatures (foxes, rabbits, plants), draws count boxes for each population,
+    updates count information, starts input listener thread, starts threads for each creature type,
+    runs the simulation, prints statistics, and outputs run data.
+
+    """
     global stats_collector
 
     all_initial_pos = set()

@@ -23,6 +23,15 @@ class StatsCollector:
         self.startTime = datetime.now().time()
                 
     def log_event(self, event_type, details, creature):
+        """
+        Logs an event occurred during the simulation.
+
+        Args:
+        - event_type (str): Type of the event.
+        - details (str): Details of the event.
+        - creature: The creature involved in the event.
+
+        """
         with self.lock:
             event_info = {
                 'timestamp': datetime.now().time(),
@@ -34,25 +43,43 @@ class StatsCollector:
             # print(f"Logged: {event_type} at {event_info['timestamp']}: {details}")
     
     def collect_stats(self, event_type, creature):
-        # generations = []
-            if event_type == 'New fox born':
-                self.total_foxes_born += 1
-            elif event_type == 'New rabbit born':
-                self.total_rabbits_born += 1
-                rabbit_generation = creature.genes.generation
-                if rabbit_generation > self.total_rabbit_generations:
-                    self.total_rabbit_generations = rabbit_generation
-                self.total_rabbit_speed += creature.size_step
-                self.average_rabbit_speed = self.total_rabbit_speed / (self.initial_num_rabbit + self.total_rabbits_born)
-            elif event_type == 'Fox passed away':
-                self.total_foxes_died += 1
-                self.average_fox_speed += creature.size_step
-            elif event_type == 'Rabbit passed away':
-                self.total_rabbits_died += 1
-            elif event_type == 'Rabbit was eaten':
-                self.total_rabbits_eaten += 1
+        """
+        Aggregates statistics based on the type of event occurred.
+
+        Args:
+        - event_type (str): Type of the event.
+        - creature: The creature involved in the event.
+
+        """
+        if event_type == 'New fox born':
+            self.total_foxes_born += 1
+        elif event_type == 'New rabbit born':
+            self.total_rabbits_born += 1
+            rabbit_generation = creature.genes.generation
+            if rabbit_generation > self.total_rabbit_generations:
+                self.total_rabbit_generations = rabbit_generation
+            self.total_rabbit_speed += creature.size_step
+            self.average_rabbit_speed = self.total_rabbit_speed / (self.initial_num_rabbit + self.total_rabbits_born)
+        elif event_type == 'Fox passed away':
+            self.total_foxes_died += 1
+            self.average_fox_speed += creature.size_step
+        elif event_type == 'Rabbit passed away':
+            self.total_rabbits_died += 1
+        elif event_type == 'Rabbit was eaten':
+            self.total_rabbits_eaten += 1
     
     def time_difference_in_seconds(self, start_time, end_time):
+        """
+        Calculates the difference in seconds between two time objects.
+
+        Args:
+        - start_time (datetime.time): Start time.
+        - end_time (datetime.time): End time.
+
+        Returns:
+        - float: Difference in seconds.
+
+        """
         # Convert time objects to datetime objects for calculation
         start_datetime = datetime.combine(datetime.today(), start_time)
         end_datetime = datetime.combine(datetime.today(), end_time)
@@ -66,6 +93,10 @@ class StatsCollector:
         return difference_seconds
 
     def output_run_data(self):
+        """
+        Outputs the run data to a CSV file.
+
+        """
         plant_pop = self.initial_num_plants
         rabbit_pop = self.initial_num_rabbit
         fox_pop =self.initial_num_foxes
@@ -84,10 +115,17 @@ class StatsCollector:
                     fox_pop += 1
                 elif event['event_type'] == 'Fox passed away':
                     fox_pop -= 1
-                file.write(str(self.time_difference_in_seconds(self.startTime, event['timestamp'])) + "," + str(plant_pop) + "," + str(rabbit_pop) + "," + str(fox_pop) + "\n")
+                file.write(str(self.time_difference_in_seconds(
+                            self.startTime, event['timestamp'])) +
+                            "," + str(plant_pop) + "," + str(rabbit_pop) +
+                            "," + str(fox_pop) + "\n")
         
     
     def print_stats(self):
+        """
+        Prints the final statistics for the simulation.
+
+        """
         print("FINAL STATS FOR THIS SIMULATION: ")
         print("Total Foxes Born: ", self.total_foxes_born)
         print("Total Foxes Died: ", self.total_foxes_died)
