@@ -8,6 +8,11 @@ from gene import *
 from stats_collector import *
 
 
+
+###################### Base Creature Class ######################
+
+# Creature class has most of the functions used by more than one type of
+# creature. Also defines each creature to have an poistion array
 class Creature:
     def __init__(self, initial_pos):
         """
@@ -126,15 +131,24 @@ class Creature:
         totalDy = 0
         for point in pointsOfInterest:
             x, y, scale = point
+            # find the vector to the point
             dx = x - self.position[0]
             dy = y - self.position[1]
+            # normalize the vector
             dxNorm, dyNorm, magnitude = normalize_vector(dx, dy)
             if magnitude == 0: continue
+            # scale the vector based on the scale (which can be negative to
+            # avoit a point of interest) and lessen the imact based on the
+            # distance to a point so nearby points will be more important
             dxScaled = (dxNorm * scale) / magnitude
             dyScaled = (dyNorm * scale) / magnitude
+            # add this vector to our results vector
             totalDx += dxScaled
             totalDy += dyScaled
+        # dx, dy represents a vector with the direction we want to go but
+        # not the right length so we normalize
         dx, dy = normalize_vector(totalDx, totalDy)[:2]
+        # finally, we move one timestep in the direction dx, dy
         return dx * sizeStep, dy * sizeStep
 
     def waitForOtherThreads(self, plants, plant_lock, rabbits,
@@ -154,18 +168,25 @@ class Creature:
         global semList
         notLast = True
         mySem = threading.Semaphore(value=0)
+        # we need to aquire all of the locks so the number of creatures doesn't
+        # change while we are checking if we are the last creature
         with semListLock:
             with plant_lock:
                 with rabbit_lock:
                     with fox_lock:
+                        # this could maybe be handled as just a count
                         numArrived = len(semList)
                         if (numArrived + 1 == (len(plants) +
                                                len(rabbits) +
                                                len(foxes))):
                             notLast = False
+                            # Sleep for 0.01 seconds here to cap the framerate
+                            # at 100fps
                             sleep(.01)
+                            # release all of the waiting threads
                             for sem in semList:
                                 sem.release()
+                            # empty the list
                             semList = []
                         else:
                             semList.append(mySem)
@@ -189,18 +210,26 @@ class Creature:
         - tuple: A tuple containing the new x and y coordinates.
 
         """
+        # use polar coordinates to pick a random point within a circular
+        # distance from self.
         angle = random.uniform(0, 2 * math.pi)
         distance = random.uniform(minDist, maxDist)
+        # translate to euclidean coordinates
         x = int(self.position[0] + distance * math.cos(angle))
         y = int(self.position[1] + distance * math.sin(angle))
+        # we cap the number of tries to prevent an infinite loop if the
+        # board becomes too dense.
         numTries = 10
         while numTries > 0:
+            # assuming the point is within bounds and more than minDist from
+            # any other creature of the same type it's a valid point
             if check_bounds(x,y) and (self.checkDensity(x,
                                                         y,
                                                         creatureList,
                                                         lock) > minDist):
                 return x, y
             numTries -= 1
+        # if no point can be found return none
         return None, None
 
     def generate_position(self):
@@ -224,6 +253,10 @@ class Creature:
             dy = self.size_step
         return self.position[0] + dx, self.position[1] + dy
 
+
+
+
+###################### Fox Class ######################
 
 class Fox(Creature, threading.Thread):
     def __init__(self, initial_pos, health): 
@@ -269,12 +302,18 @@ class Fox(Creature, threading.Thread):
         target creature.
 
         """
+        # This code is very similar to our original rabbit code before
+        # rewriting their movement and adding genetics. Foxes avoid
+        # one another which is why they use the closest "predator"
+        # even though they are also a predator
         food = self.findClosestFood()
         predator = self.findClosestPredator()
 
+        # if nothing of interest, move randomly
         if not predator and not food:
             return self.position[0], self.position[1], None
         
+        # get the distance to the closest food and predator
         distance_to_food = float('inf')
         distance_to_predator = float('inf')
         if food:
@@ -282,18 +321,24 @@ class Fox(Creature, threading.Thread):
         if predator:
             distance_to_predator = self.getDistanceTo(predator)
 
+        # the avoidOthers parameter controls how much foxes care about other
+        # foxes or food
         if (distance_to_food * avoidOthers) < (distance_to_predator *
                                               (1 - avoidOthers)):
             self.target = food
+            # get vector towards the food
             dx = food.position[0] - self.position[0]
             dy = food.position[1] - self.position[1]
             
         elif predator:
             self.target = predator
+            # get the vector away from the predator
             dx = self.position[0] - predator.position[0]
             dy = self.position[1] - predator.position[1]
 
+        # find the length of the vector
         distance = math.sqrt(dx**2 + dy**2)
+        # if it's farther than we can move, scale it to size_step
         if distance > self.size_step:
             dx = (dx / distance) * self.size_step
             dy = (dy / distance) * self.size_step
@@ -310,6 +355,10 @@ class Fox(Creature, threading.Thread):
         if len(foxes) < maxFoxes:
             x, y = self.genNewPosition(minFoxDistance, maxFoxDistance,
                                                         foxes, fox_lock)
+            # if we found a valid point then make a new fox.
+            # because we handle reproduction this way, there is a chance when
+            # a fox "reproduces" it doesn't spawn a new fox because there were
+            # too many other foxes nearby
             if (x and y):
                 newFox = Fox([x, y], health)
                 with fox_lock:
@@ -321,11 +370,15 @@ class Fox(Creature, threading.Thread):
         Runs the behavior of the fox in the simulation.
 
         """
+        # as long as it's alive and the simulation is running
         while self.health > 0 and not sim_done_event.is_set():
+            # move the fox
             new_col, new_row, target = self.moveForSurvival()
             self.position[0] = clamp(new_col, 0, canvas_width)
             self.position[1] = clamp(new_row, stat_bottom, canvas_height)
             
+            # if it's hunting a rabbit, is close enough and another fox didn't
+            # get it earlier this timestep, then we can increase our health
             if isinstance(target, Rabbit):
                 if (self.getDistanceTo(target) < 1 and target.getEaten()):
                     stats_collector.log_event('Rabbit was eaten',
@@ -335,6 +388,7 @@ class Fox(Creature, threading.Thread):
                     self.health = max(self.health + foxMetabolism,
                                                     foxStomachSize)
             elif target == None:
+                # move randomly
                 new_col, new_row = self.generate_position()
                 while(not check_bounds(new_col, new_row)):
                     new_col, new_row = self.generate_position()
@@ -342,6 +396,7 @@ class Fox(Creature, threading.Thread):
                 self.position[0] = clamp(new_col, 0, canvas_width)
                 self.position[1] = clamp(new_row, stat_bottom, canvas_height)
             
+            # update our visual position
             with canvas_lock:
                 canvas.moveto(self.canvas_object, int(self.position[0]) - 10,
                                                   int(self.position[1]) - 10)
@@ -354,7 +409,7 @@ class Fox(Creature, threading.Thread):
                 self.reproduce()
 
             self.health -= 1
-            # print(self.health)
+            # wait for other threads to finsih this timestep
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock,
                                                          foxes, fox_lock)
         with fox_lock:
@@ -364,6 +419,11 @@ class Fox(Creature, threading.Thread):
                 foxes.remove(self)
         with canvas_lock:
             canvas.delete(self.canvas_object)
+
+
+
+
+###################### Rabbit Class ######################
 
 class Rabbit(Creature, threading.Thread):    
     def __init__(self, initial_pos, genes):
@@ -423,21 +483,29 @@ class Rabbit(Creature, threading.Thread):
 
         priorities = []
 
+        # add each item to our priorities if it exists
         if food:
             priorities.append((food.position[0],
                                food.position[1],
                                self.genes.hungerFactor))
 
+        # we make the fear factor negative to make rabbits afraid of foxes
+        # this becomes the scale factor when calculating the movement vector
         if predator:
             priorities.append((predator.position[0],
                                predator.position[1],
                                self.genes.fearFactor * -1))
 
+        # we also make rabbits avoid each other but only up to a certain point
+        # this just prevents them from overlapping too much right now. 
+        # we found that making the rabbit radius too large meant that spread
+        # out too much and ended up not leaving space for food to spawn before
+        # being immidietly eaten
         if rabbit:
             if self.getDistanceTo(rabbit) < rabbitRadius:
                 priorities.append((rabbit.position[0],
                                    rabbit.position[1],
-                                   self.genes.fearFactor * -1))
+                                   self.genes.avoidOthersFactor * -1))
 
         return priorities
 
@@ -450,8 +518,11 @@ class Rabbit(Creature, threading.Thread):
         closest food.
 
         """
+        # we still look for the closest food here so we can check if we are
+        # close enough to eat it
         food = self.findClosestFood()
 
+        # see the findMovementVector and generatePriorityList functions
         dx, dy = self.findMovementVector(self.size_step,
                                          self.generatePriorityList())
 
@@ -465,6 +536,13 @@ class Rabbit(Creature, threading.Thread):
         - bool: True if the rabbit was successfully eaten, False otherwise.
 
         """
+        # we set the health to 0 for two reasons here. First, it prevents one
+        # rabbit from being eaten multiple times in the same time step (if two
+        # foxes had called this rabbits getEaten method at once). Second,
+        # setting the health to 0 will cause the rabbit to die and remove
+        # itself from the simulation on its next timestep. We originally
+        # removed the rabbit both here and seperatly if it starved which ended
+        # up causing a lot of problems so this was much cleaner.
         with rabbit_lock:
             if self.health > 0:
                 self.health = 0
@@ -486,13 +564,27 @@ class Rabbit(Creature, threading.Thread):
             x, y = self.genNewPosition(minRabbitDistance, maxRabbitDistance,
                                                           rabbits, rabbit_lock)
             if (x and y):
+                # since the above check can fail, there is a chance that a
+                # rabbit won't produce a child even if it calls this function
+
+                # mutate the parent genes to produce child genes
                 newGenes = self.genes.childGene()
+
+                # create and add a new rabbit
                 newRabbit = Rabbit([x, y], newGenes)
-                # print("My new mutation rate: ", newRabbit.genes.mutationRate)
                 with rabbit_lock:
                     rabbits.append(newRabbit)
                 newRabbit.start()
+
+                # if a child is born the parent loses some food/health
+                # proportional to the amount the child was born with.
+                # this currently isn't very important because rabbit birth-rate
+                # currently doesn't evolve. However, if we allowed that gene
+                # to mutate and didn't penalize rabbits for having children
+                # the rabbits would keep evolving a higher reproduction rate
+                # with no tradeoff
                 return newGenes.startingHealth
+        # if no child was produced the rabbit is not penalized
         return 0
 
     def run(self): 
@@ -500,12 +592,12 @@ class Rabbit(Creature, threading.Thread):
         Runs the behavior of the rabbit in the simulation.
 
         """
-        while (self.health > 0 and self in rabbits
-                              and not sim_done_event.is_set()):
+        while (self.health > 0 and not sim_done_event.is_set()):
             new_col, new_row, target = self.moveForSurvival()
             self.position[0] = clamp(new_col, 0, canvas_width)
             self.position[1] = clamp(new_row, stat_bottom, canvas_height)
 
+            # eat a plant if it's close enough
             if isinstance(target, Plant):
                 if ((self.getDistanceTo(target) < 5) and target.getEaten()):
                     self.health = max(self.health + rabbitMetabolism,
@@ -528,8 +620,10 @@ class Rabbit(Creature, threading.Thread):
                 # lose half the health we give to child
                 self.health -= (cost / 2)
 
+            # decriment our health each timestep to represent starvation
             self.health -= 1
-            # print(self.health)
+
+            # wait for other threads
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock,
                                                          foxes, fox_lock)
         with rabbit_lock:
@@ -542,7 +636,12 @@ class Rabbit(Creature, threading.Thread):
         with canvas_lock:
             canvas.delete(self.canvas_object)
 
-#PLANTS
+
+
+
+
+###################### Plant Class ######################
+
 class Plant(Creature, threading.Thread):
     def __init__(self, initial_pos, health, reproduceRate): 
         """
@@ -570,7 +669,10 @@ class Plant(Creature, threading.Thread):
             x, y = self.genNewPosition(minPlantDistance, maxPlantDistance,
                                                          plants, plant_lock)
             if (x and y):
-                # print("new plant")
+                # plant reproduction is the same as rabbits and foxes although
+                # the restriction on density is much more important since it
+                # effectivly caps the number of plants that can exist in an
+                # area
                 newPlant = Plant([x, y], foodValue, plantRate)
                 stats_collector.log_event('New plant born',
                             f'''Born at position ({newPlant.position[0]:.3f},
@@ -585,11 +687,11 @@ class Plant(Creature, threading.Thread):
 
         """
         while self.foodValue > 0 and not sim_done_event.is_set():
+            # plants just reproduce and can be eaten
             if random.random() < self.reproduceRate:
                 self.reproduce()
             self.waitForOtherThreads(plants, plant_lock, rabbits, rabbit_lock,
                                                          foxes, fox_lock)
-        # print("plant done")
 
     def getEaten(self):
         """
@@ -599,6 +701,9 @@ class Plant(Creature, threading.Thread):
         - bool: True if the plant was successfully eaten, False otherwise.
 
         """
+        # We built in the ability for plants to have more than bite taken
+        # out of them but found it cause rabbits to bunch up more than
+        # we liked so we kept it at 1 most of the time.
         if (self.foodValue > 0):
             self.foodValue -= 1
             if (self.foodValue == 0):

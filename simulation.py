@@ -8,6 +8,10 @@ from creature import *
 from gene import *
 import sys
 
+
+
+###################### Stat Display ######################
+
 def draw_count(creature_name):
     """
     Draws a stats box on the canvas.
@@ -22,6 +26,7 @@ def draw_count(creature_name):
     if (creature_name == "plant") :
         string = "PLANTS\n" \
                     + "population: " + str(len(plants))
+        # calculate the portion of the screen
         frac_of_screen_x1 = 0
         frac_of_screen_x2 = 1 / 3
         color = plant_color
@@ -30,12 +35,14 @@ def draw_count(creature_name):
                         + "population: " + str(len(rabbits)) \
                         + "\n avg speed: " + str(rabbitSpeed) \
                         + "\n avg health: " + str(get_avg_rabbit_health())
+        # calculate the portion of the screen
         frac_of_screen_x1 = 1 / 3
         frac_of_screen_x2 = 2 / 3
         color = rabbit_color
     else : 
         string = "FOXES\n" \
                 + "population: " + str(len(foxes))
+        # calculate the portion of the screen
         frac_of_screen_x1 = 2 / 3
         frac_of_screen_x2 = 1
         color = fox_color
@@ -44,7 +51,9 @@ def draw_count(creature_name):
     x2 = canvas_width * frac_of_screen_x2
     y1 = 0
     y2 = stat_height
+    # create outline
     square = canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
+    # add text
     text = canvas.create_text((x1 + x2) / 2,
                               (y1 + y2) / 2,
                               text=str(string),
@@ -92,11 +101,19 @@ def update_count(plant_cnt, rabbit_cnt, fox_cnt):
     canvas.itemconfig(rabbit_cnt, text=rabbit_stats)
     canvas.itemconfig(fox_cnt, text=fox_stats)
 
+    # we have to use .after() here because directly manipulating the cavas
+    # while not in the main thread can cause issues
     global after_id
     after_id = canvas.after(1000, update_count, plant_cnt, rabbit_cnt, fox_cnt)
 
+    # if the simulation ends don't update the numbers
     if sim_done:
         canvas.after_cancel(after_id)
+
+
+
+
+###################### Listener Thread ######################
 
 def listen_to_user_input():
     """
@@ -106,21 +123,35 @@ def listen_to_user_input():
     signals the 'sim_done_event', releases all semaphores in 'semList', and terminates.
 
     """
+    global stats_collector
     global sim_done
     global semList
     while True:
         # Apparently tkinter and the input() function don't work together
         # when multi-threading so we used readline()
         user_input = sys.stdin.readline().strip()
+        # With more time, we can add more user options here
         if user_input == "q":
             print("killing creatures")
+            # signal done to all threads
             sim_done = True
             sim_done_event.set()
+
+            # flush the barrier
             with semListLock:
                 for sem in semList:
                     sem.release()
                 semList = []
+
+            # print the stats from the simulation
+            stats_collector.print_stats()
+            stats_collector.output_run_data()
             break
+
+
+
+
+###################### Main/Window Thread ######################
 
 def main():
     """
@@ -132,8 +163,6 @@ def main():
     runs the simulation, prints statistics, and outputs run data.
 
     """
-    global stats_collector
-
     all_initial_pos = set()
             
     def initialize_start_positions(creatures, n_creatures, creature_class):
@@ -163,6 +192,7 @@ def main():
     fox_square, fox_cnt = draw_count("fox")
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 
+    ## start threads
     input_thread = threading.Thread(target=listen_to_user_input)
     input_thread.start()
 
@@ -175,10 +205,9 @@ def main():
     for fox in foxes:
         fox.start()
 
+    # this runs as long as the window is open and ends when the user clicks the
+    # 'x' button.
     window.mainloop()
-
-    stats_collector.print_stats()
-    stats_collector.output_run_data()
 
     print("Simulation Completed.")
 

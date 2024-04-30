@@ -3,6 +3,7 @@ import math
 from global_stuff import *
 
 
+
 def _mutateValue(value, rate, min_val, max_val):
     """
     Mutates a value within a specified range.
@@ -21,7 +22,8 @@ def _mutateValue(value, rate, min_val, max_val):
     return clamp(newValue, min_val, max_val)
 
 # this needs to be a different function because these values are linked
-# when speed increases efficency should decrease and vice versa
+# when speed increases efficency should decrease and vice versa. This is to
+# prevent speed from increasing without restriction through evolution.
 # also I didn't add allow min/max parameters because that's a lot of params
 def _mutateEnergyBudget(metabolism, stomachSize, speed, rate):
     """
@@ -39,6 +41,7 @@ def _mutateEnergyBudget(metabolism, stomachSize, speed, rate):
 
     """
     m = random.uniform(-rate, rate)
+    # when speed increases, metabolism decreases and vice versa
     sChange = (1 - m)
     eChange = (1 + (5*m))
     metabolism = clamp(metabolism * eChange, 0, 3000)
@@ -52,6 +55,8 @@ class Gene:
         Initializes a Gene class object
 
         """
+        # We take in an array of starting genetics. This is effectivly the
+        # genome of the rabbit
         self.mutationRate = startingGenes[0]
         self.metabolism = startingGenes[1]
         self.stomachSize = startingGenes[2]
@@ -85,8 +90,12 @@ class Gene:
         r, g, b = self.color
         color = (_mutateValue(r, 0.5, 0, 255), _mutateValue(g, 0.5, 0, 255),
                  _mutateValue(b, 0.5, 0, 255))
+        # the starting health can't exceed the reproduction cutoff of the
+        # parent. This prevents parents from giving birth to too large
+        # children
         health = _mutateValue(r, m, 0, cutoff)
         generation = self.generation + 1
+        # generate the array of genes for the child
         return Gene([m, meta, ssize, speed, rate, cutoff, fear,
                      hunger, avoid, color, health, generation])
         

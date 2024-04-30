@@ -3,7 +3,13 @@ from global_stuff import *
 from datetime import datetime, time
 
 class StatsCollector:
-    def __init__(self, n_rabbits, n_plants, n_foxes, rabbitSpeed, fearFactor, hungerFactor):
+    """
+    initialize a stat collector object
+
+    """
+    def __init__(self, n_rabbits, n_plants, n_foxes,
+                 rabbitSpeed, fearFactor, hungerFactor):
+        # the stat collector needs to know about all of these starting stats
         self.events = []
         self.lock = threading.Lock()
         self.total_foxes_born = 0
@@ -40,7 +46,6 @@ class StatsCollector:
             }
             self.collect_stats(event_type, creature)
             self.events.append(event_info)
-            # print(f"Logged: {event_type} at {event_info['timestamp']}: {details}")
     
     def collect_stats(self, event_type, creature):
         """
@@ -55,9 +60,13 @@ class StatsCollector:
             self.total_foxes_born += 1
         elif event_type == 'New rabbit born':
             self.total_rabbits_born += 1
+
+            # count the maximum generation reached
             rabbit_generation = creature.genes.generation
             if rabbit_generation > self.total_rabbit_generations:
                 self.total_rabbit_generations = rabbit_generation
+            
+            # recalculate the average rabbit speed
             self.total_rabbit_speed += creature.size_step
             self.average_rabbit_speed = self.total_rabbit_speed / (self.initial_num_rabbit + self.total_rabbits_born)
         elif event_type == 'Fox passed away':
@@ -92,6 +101,9 @@ class StatsCollector:
         
         return difference_seconds
 
+
+    # this function changed a number of times to collect various kinds of data
+    # it is currently setup to record population metrics over time.
     def output_run_data(self):
         """
         Outputs the run data to a CSV file.
@@ -134,7 +146,8 @@ class StatsCollector:
         print("Total Rabbits Died of Natural Causes: ", self.total_rabbits_died - self.total_rabbits_eaten)
         print("Total Rabbit Deaths: ", self.total_rabbits_died)
         print("Average Rabbit speed: ", self.average_rabbit_speed)
+        # if no foxes died we can get a divide by 0 error
         if (self.total_foxes_died > 0):
             avg_fox_speed = self.average_fox_speed / self.total_foxes_died
             print("Average Fox speed: ", avg_fox_speed)
-        print("Total Rabbit Generations: ", self.total_rabbits_eaten, self.total_rabbit_generations)
+        print("Total Rabbit Generations: ", self.total_rabbit_generations)

@@ -47,6 +47,10 @@ def check_bounds(col, row):
     - bool: True if the column and row are within the bounds, False otherwise.
 
     """
+    # We had a problem where things could spawn at x = 0 but not move there
+    # so plants and rabbits would be attracted to the top and left sides of
+    # screen and changing the minimum spawn location to x = 1 not 0 fixed the
+    # issue
     if col < 1 or col > canvas_width:
         return False
     elif row < stat_bottom or row > canvas_height:
@@ -135,20 +139,22 @@ maxPlantDistance = 6000 # maximum distance plants can be from their parent
 rabbitMutationRate = 0.2
 rabbitMetabolism = 60 # amount of health that rabbits get back per food
 rabbitStomachSize = 300 # max amount of health a rabbit can have
-rabbitSpeed = 1.2
+rabbitSpeed = 1.2 # rabbit starting speed
 rabbitRate = 0.004 # likelyhood that any healthy rabbit will reproduce
-rabbitReproductionCutoff = 100
-fearFactor = 1
-hungerFactor = 1
-generation = 1
-avoidOthersFactor = 0.1
-rabbitRadius = 10
+rabbitReproductionCutoff = 100 # rabbits can only reproduce if they have
+# at least this much health
+fearFactor = 1 # how afraid of foxes rabbits are
+hungerFactor = 1 # how much they desire food
+avoidOthersFactor = 0.1 # how much they avoid other rabbits
+rabbitRadius = 100 # how far away they care about other rabbits
+generation = 1 # tracks the number of generations
 rabbitColor = (50, 50, 200)
-rabbitHealth = 100
+rabbitHealth = 100 # starting health of rabbits
 maxRabbits = 150 # max number of rabbits
 minRabbitDistance = 30 # minimum distance rabbits must be from each other
 maxRabbitDistance = 50 # maximum distance rabbits can be from their parent
 
+# create a genome for the starting population
 rabbitStartingGenes = [rabbitMutationRate, rabbitMetabolism,
                         rabbitStomachSize, rabbitSpeed, rabbitRate,
                         rabbitReproductionCutoff, fearFactor, hungerFactor,
@@ -158,10 +164,11 @@ rabbitStartingGenes = [rabbitMutationRate, rabbitMetabolism,
 # fox info
 foxMetabolism = 50 # amount of health that fox get back per food
 foxStomachSize = 350 # max amount of health a fox can have
-foxSpeed = 2
+foxSpeed = 2 # fox starting speed
 foxRate = 0.001 # likelyhood that any healthy fox will reproduce each time step
-foxReproductionCutoff = 100
-avoidOthers = 0.3
+foxReproductionCutoff = 100 # foxes only reproduce if they have at least this
+# much health
+avoidOthers = 0.3 # how strongly foxes avoid other foxes
 maxFoxes = 50 # max number of foxes
 minFoxDistance = 30 # minimum distance foxes must be from each other
 maxFoxDistance = 50 # maximum distance foxes can be from their parent
@@ -200,19 +207,26 @@ canvas_lock = threading.Lock()
 
 ###################### Global Shared Information ######################
 
+# these lists are super important. Creatures have acess to these lists and use
+# them to locate other creatures among a number of other useful things like
+# representing how many threads are running (for the barrier)
 rabbits = []
 plants = []
 foxes = []
 
+# protect the above lists
 rabbit_lock = threading.Lock()
 plant_lock = threading.Lock()
 fox_lock = threading.Lock()
 
+# used in the barrier
 semList = []
 semListLock = threading.Lock()
 
+# signal the end of the simulation
 sim_done = False
 sim_done_event = threading.Event()
 
+# global stats collector to report stats to
 stats_collector = StatsCollector(n_plants, n_plants, n_foxes,
                                  rabbitSpeed, fearFactor, hungerFactor)
