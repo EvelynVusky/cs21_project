@@ -193,7 +193,7 @@ def main():
     update_count(plant_cnt, rabbit_cnt, fox_cnt)
 
     ## start threads
-    input_thread = threading.Thread(target=listen_to_user_input)
+    input_thread = threading.Thread(target=listen_to_user_input, daemon=True)
     input_thread.start()
 
     for plant in plants:

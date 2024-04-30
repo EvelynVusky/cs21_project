@@ -265,7 +265,7 @@ class Fox(Creature, threading.Thread):
 
         """
         Creature.__init__(self, initial_pos)
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, daemon=True)
         self.size_step = foxSpeed
         self.health = health
         self.target = None
@@ -432,7 +432,7 @@ class Rabbit(Creature, threading.Thread):
 
         """
         Creature.__init__(self, initial_pos)
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, daemon=True)
         self.genes = genes
         self.size_step = genes.speed
         self.health = genes.startingHealth
@@ -649,7 +649,7 @@ class Plant(Creature, threading.Thread):
 
         """
         Creature.__init__(self, initial_pos)
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, daemon=True)
         self.foodValue = health
         self.reproduceRate = reproduceRate
         self.canvas_object = canvas.create_rectangle(initial_pos[0]-5,
